@@ -4498,26 +4498,42 @@ const CHALÉS = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc']
 const MESES_DIAS = [31,28,31,30,31,30,31,31,30,31,30,31];
 
 function parseMoeda(val) {
+  // Para Vendas_BD: "R$ 6,560" = 6560, "R$ 1.234,56" = 1234.56
   if (!val) return 0;
   if (typeof val === 'number') return val;
   let s = String(val).replace(/R\$\s*/g,'').trim();
-  // Formato BR: vírgula é decimal, ponto é milhar
-  // Ex: "6.560" = 6560, "1.234,56" = 1234.56, "6,560" = 6560 (sem decimal cents)
-  if (s.includes(',')) {
-    // Tem vírgula — pode ser decimal ou milhar
+  if (s.includes(',') && s.includes('.')) {
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if (lastDot > lastComma) { s = s.replace(/,/g,''); }
+    else { s = s.replace(/\./g,'').replace(',','.'); }
+  } else if (s.includes(',')) {
     const partes = s.split(',');
-    if (partes.length === 2 && partes[1].length <= 2) {
-      // Ex: "1.234,56" — vírgula é decimal
-      s = s.replace(/\./g,'').replace(',','.');
-    } else {
-      // Ex: "6,560" — vírgula é milhar (3 dígitos depois)
-      s = s.replace(/,/g,'');
-    }
-  } else {
-    // Sem vírgula — ponto pode ser milhar
-    // Ex: "6.560" ou "31.912"
+    if (partes[1] && partes[1].length === 3) { s = s.replace(/,/g,''); }
+    else { s = s.replace(',','.'); }
+  } else if (s.includes('.')) {
+    // Sem vírgula — ponto é milhar (formato Vendas)
     s = s.replace(/\./g,'');
   }
+  return parseFloat(s) || 0;
+}
+
+function parseGasto(val) {
+  // Para BD_Gastos: valores numéricos puros ou com ponto decimal
+  // Ex: 455.646 = 455.646 (ponto é decimal), 30906 = 30906
+  if (!val) return 0;
+  if (typeof val === 'number') return val;
+  let s = String(val).replace(/R\$\s*/g,'').trim();
+  // Se tem vírgula E ponto, ponto é decimal (formato EN)
+  if (s.includes(',') && s.includes('.')) {
+    s = s.replace(/,/g,''); // remover vírgulas de milhar
+  } else if (s.includes(',') && !s.includes('.')) {
+    // Só vírgula — verificar se é milhar ou decimal
+    const partes = s.split(',');
+    if (partes[1] && partes[1].length === 3) { s = s.replace(',',''); }
+    else { s = s.replace(',','.'); }
+  }
+  // Com ou sem ponto, parseFloat trata ponto como decimal
   return parseFloat(s) || 0;
 }
 
@@ -4763,7 +4779,7 @@ function processarGastos(workbook) {
     if (isNaN(dt)) return;
     const mes = dt.getMonth();
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
-    const val = parseMoeda(r[valKey]);
+    const val = parseGasto(r[valKey]);
     if (val <= 0) return;
     const cat = r['Categoria'] || 'Outros';
 
