@@ -4762,7 +4762,8 @@ function processarGastos(workbook) {
     const dt = excelDateToJS(dtRaw);
     if (isNaN(dt)) return;
     const mes = dt.getMonth();
-    const val = parseMoeda(r['Valor (R$)']);
+    const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
+    const val = parseMoeda(r[valKey]);
     if (val <= 0) return;
     const cat = r['Categoria'] || 'Outros';
 
