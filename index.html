@@ -4522,20 +4522,22 @@ function parseGasto(val) {
   if (!val) return 0;
   if (typeof val === 'number') return val;
   let s = String(val).trim().replace(/^\s*R\$\s*/,'').trim();
+  // Formato do Dropbox: "10,092.53" (vírgula=milhar, ponto=decimal)
   if (s.includes(',') && s.includes('.')) {
-    // "3.235,51" → ponto é milhar, vírgula é decimal
-    s = s.replace(/\./g,'').replace(',','.');
-  } else if (s.includes(',')) {
-    // "300,00" ou "44,62" → vírgula é decimal
-    s = s.replace(',','.');
-  } else if (s.includes('.')) {
-    // "3.235" ou "44.62" — ambíguo
-    const partes = s.split('.');
-    if (partes.length === 2 && partes[1].length === 3) {
-      // "3.235" → ponto é milhar → remover
-      s = s.replace('.','');
+    const lastComma = s.lastIndexOf(',');
+    const lastDot   = s.lastIndexOf('.');
+    if (lastDot > lastComma) {
+      s = s.replace(/,/g,''); // "10,092.53" → "10092.53"
+    } else {
+      s = s.replace(/\./g,'').replace(',','.'); // "3.235,51" → "3235.51"
     }
-    // "44.62" → ponto é decimal → manter
+  } else if (s.includes(',')) {
+    const partes = s.split(',');
+    if (partes[1] && partes[1].length === 3) {
+      s = s.replace(',',''); // "10,092" → "10092"
+    } else {
+      s = s.replace(',','.'); // "44,62" → "44.62"
+    }
   }
   return parseFloat(s) || 0;
 }
@@ -4769,8 +4771,6 @@ function processarGastos(workbook) {
 
 
   let countTotal=0, countSemTipo=0, countSemAno=0, countSemData=0, countSemVal=0, countOk=0;
-  let count2025=0, count2026=0;
-  let debugValor = '';
 
   rows.forEach(r => {
     countTotal++;
@@ -4787,11 +4787,8 @@ function processarGastos(workbook) {
     const mes = dt.getMonth();
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
-    if (!debugValor && anoRaw===2025) debugValor = 'raw=' + JSON.stringify(r[valKey]) + ' parsed=' + val;
     if (val <= 0) { countSemVal++; return; }
     countOk++;
-    if (ano===2025) count2025++;
-    if (ano===2026) count2026++;
     // Guardar maiores valores raw para debug
     if (ano===2025 && tipo==='OPEX') {
       if (!window._allVals) window._allVals = [];
@@ -4808,10 +4805,6 @@ function processarGastos(workbook) {
     else rawMes[ano][mes][tipo].push({n:cat, v:val});
   });
 
-  const sorted = (window._allVals||[]).sort((a,b)=>b.val-a.val);
-  const top5 = sorted.slice(0,5).map(x=>'cat='+x.cat+' raw='+JSON.stringify(x.raw)+' → '+x.val);
-  const bookings = (window._allVals||[]).filter(x=>x.cat==='Booking').sort((a,b)=>b.val-a.val).slice(0,3).map(x=>'mes='+x.mes+' raw='+JSON.stringify(x.raw)+' → '+x.val);
-  alert('D25 OPEX: ' + Math.round(d[2025].OPEX.reduce((s,v)=>s+v,0)) + '\n\nTop 5:\n' + top5.join('\n') + '\n\nBooking top3:\n' + bookings.join('\n'));
   anos.forEach(ano => {
     for(let m=0;m<12;m++) {
       TIPOS_GASTO.forEach(tipo => {
