@@ -4876,12 +4876,6 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
-  // Debug temporário
-  const cats25opex = CATS25.OPEX.slice(0,5).map(c=>c.n+'='+c.v).join(', ');
-  const opex25 = D25.OPEX.reduce((s,v)=>s+v,0);
-  const opex26 = D26.OPEX.reduce((s,v)=>s+v,0);
-  alert('D25 OPEX: ' + opex25 + ' (esperado ~461k)\nD26 OPEX: ' + opex26 + '\nCATS25 top5: ' + cats25opex);
-
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
@@ -4893,6 +4887,7 @@ function calcularResultado() {
     const exCat = cats.OPEX.find(c => c.n==='Expedia' || c.n==='EXPEDIA');
     const bkTotal = bkCat ? bkCat.v : 0;
     const exTotal = exCat ? exCat.v : 0;
+    if (ano===2025) alert('Booking OPEX: ' + bkTotal + '\nExpedia OPEX: ' + exTotal + '\nD25 OPEX total: ' + ga.OPEX.reduce((s,v)=>s+v,0) + '\nCATS25 OPEX cats: ' + cats.OPEX.slice(0,8).map(c=>c.n+'='+Math.round(c.v)).join(', '));
     const otaTotal = bkTotal + exTotal;
 
     const opexTotal = ga.OPEX.reduce((s,v)=>s+v,0);
