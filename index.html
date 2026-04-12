@@ -4748,6 +4748,9 @@ function processarGastos(workbook) {
     for(let m=0;m<12;m++) rawMes[ano][m] = {OPEX:[],CAPEX:[],FINEX:[]};
   });
 
+  const firstGasto = rows.find(r => TIPOS_GASTO.includes(r['Tipo']));
+  if (firstGasto) alert('1o gasto:\nTipo: ' + firstGasto['Tipo'] + '\nAno: ' + firstGasto['Ano'] + '\nData: ' + firstGasto['Data Transação Aj.'] + '\nValor: ' + firstGasto['Valor (R$)']);
+
   rows.forEach(r => {
     const tipo = r['Tipo'];
     if (!TIPOS_GASTO.includes(tipo)) return;
@@ -4759,7 +4762,7 @@ function processarGastos(workbook) {
     const dt = excelDateToJS(dtRaw);
     if (isNaN(dt)) return;
     const mes = dt.getMonth();
-    const val = parseFloat(r['Valor (R$)']) || 0;
+    const val = parseMoeda(r['Valor (R$)']);
     if (val <= 0) return;
     const cat = r['Categoria'] || 'Outros';
 
