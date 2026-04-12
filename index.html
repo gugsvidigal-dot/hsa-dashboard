@@ -4492,7 +4492,7 @@ function limparReservas() {
 <script>
 // ═══════════════ MOTOR DINÂMICO — processa Excel e recalcula tudo ═══════════════
 
-const STATUS_OK = ['Concluída','Confirmada e Paga Parcial','Concluída - ag. Pgto agência','Confirmada e Paga 100%'];
+const STATUS_OK = ['Concluída','Confirmada e Paga Parcial','Concluída - ag. Pgto agência','Confirmada e Paga 100%','Confirmada e Não Paga','Confirmada e CC Inválido','Concluída - No Show','Em cotação'];
 const TIPOS_GASTO = ['OPEX','CAPEX','FINEX'];
 const CHALÉS = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
 const MESES_DIAS = [31,28,31,30,31,30,31,31,30,31,30,31];
@@ -4519,27 +4519,24 @@ function parseMoeda(val) {
 }
 
 function parseGasto(val) {
-  if (!val) return 0;
+  if (val === null || val === undefined || val === '') return 0;
   if (typeof val === 'number') return val;
-  let s = String(val).trim().replace(/^\s*R\$\s*/,'').trim();
-  // Formato do Dropbox: "10,092.53" (vírgula=milhar, ponto=decimal)
+  let s = String(val).trim();
+  // Detectar negativo antes de remover símbolos
+  const neg = s.replace(/[R\$\s]/g,'').startsWith('-');
+  s = s.replace(/R\$\s*/g,'').replace(/-/g,'').trim();
   if (s.includes(',') && s.includes('.')) {
     const lastComma = s.lastIndexOf(',');
     const lastDot   = s.lastIndexOf('.');
-    if (lastDot > lastComma) {
-      s = s.replace(/,/g,''); // "10,092.53" → "10092.53"
-    } else {
-      s = s.replace(/\./g,'').replace(',','.'); // "3.235,51" → "3235.51"
-    }
+    if (lastDot > lastComma) { s = s.replace(/,/g,''); }
+    else { s = s.replace(/\./g,'').replace(',','.'); }
   } else if (s.includes(',')) {
     const partes = s.split(',');
-    if (partes[1] && partes[1].length === 3) {
-      s = s.replace(',',''); // "10,092" → "10092"
-    } else {
-      s = s.replace(',','.'); // "44,62" → "44.62"
-    }
+    if (partes[1] && partes[1].length === 3) { s = s.replace(',',''); }
+    else { s = s.replace(',','.'); }
   }
-  return parseFloat(s) || 0;
+  const result = parseFloat(s) || 0;
+  return neg ? -result : result;
 }
 
 function getCanal(origem) {
@@ -4770,25 +4767,22 @@ function processarGastos(workbook) {
   });
 
 
-  let countTotal=0, countSemTipo=0, countSemAno=0, countSemData=0, countSemVal=0, countOk=0;
 
   rows.forEach(r => {
-    countTotal++;
     const tipo = r['Tipo'];
-    if (!TIPOS_GASTO.includes(tipo)) { countSemTipo++; return; }
+    if (!TIPOS_GASTO.includes(tipo)) return;
     const anoRaw = parseInt(parseFloat(r['Ano']));
-    if (!anos.includes(anoRaw)) { countSemAno++; return; }
+    if (!anos.includes(anoRaw)) return;
     const ano = anoRaw;
     const dtKey = Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao') || k.includes('Aj.')) || 'Data Transação Aj.';
     const dtRaw = r[dtKey];
-    if (!dtRaw) { countSemData++; return; }
+    if (!dtRaw) return;
     const dt = excelDateToJS(dtRaw);
-    if (isNaN(dt)) { countSemData++; return; }
+    if (isNaN(dt)) return;
     const mes = dt.getMonth();
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
-    if (val <= 0) { countSemVal++; return; }
-    countOk++;
+    if (val === 0 || isNaN(val)) return;
     // Guardar maiores valores raw para debug
     if (ano===2025 && tipo==='OPEX') {
       if (!window._allVals) window._allVals = [];
@@ -4887,7 +4881,6 @@ function calcularResultado() {
     const exCat = cats.OPEX.find(c => c.n==='Expedia' || c.n==='EXPEDIA');
     const bkTotal = bkCat ? bkCat.v : 0;
     const exTotal = exCat ? exCat.v : 0;
-    if (ano===2025) alert('Booking OPEX: ' + bkTotal + '\nExpedia OPEX: ' + exTotal + '\nD25 OPEX total: ' + ga.OPEX.reduce((s,v)=>s+v,0) + '\nCATS25 OPEX cats: ' + cats.OPEX.slice(0,8).map(c=>c.n+'='+Math.round(c.v)).join(', '));
     const otaTotal = bkTotal + exTotal;
 
     const opexTotal = ga.OPEX.reduce((s,v)=>s+v,0);
