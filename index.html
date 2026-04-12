@@ -4767,8 +4767,6 @@ function processarGastos(workbook) {
     for(let m=0;m<12;m++) rawMes[ano][m] = {OPEX:[],CAPEX:[],FINEX:[]};
   });
 
-  const firstGasto = rows.find(r => TIPOS_GASTO.includes(r['Tipo']));
-  if (firstGasto) alert('Colunas BD_Gastos:\n' + Object.keys(firstGasto).join('\n').slice(0,300));
 
   rows.forEach(r => {
     const tipo = r['Tipo'];
@@ -4867,65 +4865,51 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
-  // Recalcular RDATA para 2025 e 2026
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
-    const ga = ano===2025 ? D25 : D26;
+    const ga   = ano===2025 ? D25 : D26;
+    const cats = ano===2025 ? CATS25 : CATS26;
 
-    // OPEX sem OTA (sem Booking e Expedia do BD_Gastos)
-    // Já está em D25/D26 limpo — mas precisamos subtrair Booking e Expedia
-    const bkArr = (ano===2025?CATS25:CATS26).OPEX.find(c=>c.n==='Booking');
-    const exArr = (ano===2025?CATS25:CATS26).OPEX.find(c=>c.n==='Expedia');
+    // OPEX limpo = OPEX total do BD_Gastos - Booking - Expedia (já descontados da RecLiq)
+    const bkCat = cats.OPEX.find(c => c.n==='Booking');
+    const exCat = cats.OPEX.find(c => c.n==='Expedia' || c.n==='EXPEDIA');
+    const bkTotal = bkCat ? bkCat.v : 0;
+    const exTotal = exCat ? exCat.v : 0;
+    const otaTotal = bkTotal + exTotal;
 
-    // Recalcular por mês usando gastos mensais
-    // Para simplificar, usar os totais anuais para proporção mensal
-    const opexTot = TOTAIS25.OPEX || TOTAIS26.OPEX;
-
-    const nMeses = ano===2025 ? 12 : V.recBruta.filter(v=>v>0).length;
-    const meses = Array.from({length:nMeses},(_,i)=>i);
-
-    const recLiq     = V.recLiq;
-    const opexMes    = ga.OPEX;
-    const capexMes   = ga.CAPEX;
-    const finexMes   = ga.FINEX;
-
-    // Booking e Expedia por mês do BD_Gastos (já estão incluídos no OPEX)
-    // Precisamos das constantes RAW_MES para isso
-    // Por ora, calcular opexSemOTA = OPEX - proporção de Booking/Expedia
-    const bkTotal = bkArr ? bkArr.v : 0;
-    const exTotal = exArr ? exArr.v : 0;
     const opexTotal = ga.OPEX.reduce((s,v)=>s+v,0);
+    const otaProp   = opexTotal > 0 ? otaTotal / opexTotal : 0;
 
-    const opexSemOTA = ga.OPEX.map((v,m) => {
-      // Estimativa: proporção mensal de Booking+Expedia
-      const bkProp = opexTotal>0 ? (bkTotal+exTotal)/opexTotal : 0;
-      return Math.round(v * (1-bkProp));
-    });
+    // OPEX limpo por mês (proporcional)
+    const opexLimpo = ga.OPEX.map(v => Math.round(v * (1 - otaProp)));
 
-    const res1 = meses.map(m => Math.round(recLiq[m] - opexSemOTA[m]));
-    const res2 = meses.map(m => res1[m] - (capexMes[m]||0));
-    const res3 = meses.map(m => res2[m] - (finexMes[m]||0));
+    const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
+    const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    const res1 = ga.OPEX.slice(0,nMeses).map((_, m) => Math.round(V.recLiq[m] - opexLimpo[m]));
+    const res2 = res1.map((v, m) => v - (ga.CAPEX[m]||0));
+    const res3 = res2.map((v, m) => v - (ga.FINEX[m]||0));
 
     RDATA[ano] = {
-      meses: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].slice(0,nMeses),
-      recBruta:   V.recBruta.slice(0,nMeses),
-      otaBdg:     ga.OPEX.slice(0,nMeses).map((v,m)=>Math.round(v*(bkTotal/(opexTotal||1)))),
-      pagsVbd:    Array(nMeses).fill(0),
-      recLiq:     recLiq.slice(0,nMeses),
-      opexSemOTA: opexSemOTA.slice(0,nMeses),
-      capex:      capexMes.slice(0,nMeses),
-      finex:      finexMes.slice(0,nMeses),
+      meses:        ML.slice(0, nMeses),
+      recBruta:     V.recBruta.slice(0, nMeses),
+      otaBdg:       ga.OPEX.slice(0, nMeses).map(v => Math.round(v * otaProp)),
+      pagsVbd:      Array(nMeses).fill(0),
+      recLiq:       V.recLiq.slice(0, nMeses),
+      opexSemOTA:   opexLimpo.slice(0, nMeses),
+      capex:        ga.CAPEX.slice(0, nMeses),
+      finex:        ga.FINEX.slice(0, nMeses),
       res1, res2, res3,
       totRecBruta:  V.recBruta.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totOTA:       bkTotal+exTotal,
+      totOTA:       otaTotal,
       totPagS:      0,
-      totRecLiq:    recLiq.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totOpexSemOTA:opexSemOTA.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totRecLiq:    V.recLiq.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totOpexSemOTA:opexLimpo.slice(0,nMeses).reduce((s,v)=>s+v,0),
       totRes1:      res1.reduce((s,v)=>s+v,0),
-      totCapex:     capexMes.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totCapex:     ga.CAPEX.slice(0,nMeses).reduce((s,v)=>s+v,0),
       totRes2:      res2.reduce((s,v)=>s+v,0),
-      totFinex:     finexMes.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totFinex:     ga.FINEX.slice(0,nMeses).reduce((s,v)=>s+v,0),
       totRes3:      res3.reduce((s,v)=>s+v,0),
       totalReservas: V.totalReservas,
       totalDiarias:  V.totalDiarias,
@@ -5049,7 +5033,6 @@ async function dbxApiContent(endpoint, arg, fileBody) {
 
 async function dbxCarregarExcel() {
   const token = localStorage.getItem(DBX_TOKEN_KEY);
-  alert('Token: ' + (token ? 'OK (' + token.slice(0,10) + '...)' : 'NÃO ENCONTRADO'));
   if (!dbxToken && !token) { alert('Conecte o Dropbox primeiro.'); return; }
   if (!dbxToken) dbxToken = token;
 
@@ -5122,7 +5105,6 @@ async function dbxCarregarExcel() {
 
   } catch(err) {
     dbxSetStatus('Erro: ' + err.message, 'error');
-    alert('Erro detalhado: ' + err.message);
   }
 }
 
@@ -5200,7 +5182,7 @@ function adicionarLinhaExcel(workbook, r) {
 async function dbxCarregarExcelAuto() {
   if (!dbxFilePath) dbxFilePath = DBX_FILE_PATH;
   if (!dbxToken) await dbxRenovarToken();
-  if (!dbxToken) { alert('Token não disponível'); return; }
+  if (!dbxToken) return;
   const statusEl = document.getElementById('res-sync-status');
   if (statusEl) { statusEl.style.display='block'; statusEl.textContent='⟳ Carregando Excel do Dropbox...'; statusEl.style.color='var(--muted)'; statusEl.style.background='var(--surf2)'; statusEl.style.border='1px solid var(--border)'; }
   try {
