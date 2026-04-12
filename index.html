@@ -4523,9 +4523,19 @@ function parseGasto(val) {
   if (typeof val === 'number') return val;
   let s = String(val).trim().replace(/^\s*R\$\s*/,'').trim();
   if (s.includes(',') && s.includes('.')) {
+    // "3.235,51" → ponto é milhar, vírgula é decimal
     s = s.replace(/\./g,'').replace(',','.');
   } else if (s.includes(',')) {
+    // "300,00" ou "44,62" → vírgula é decimal
     s = s.replace(',','.');
+  } else if (s.includes('.')) {
+    // "3.235" ou "44.62" — ambíguo
+    const partes = s.split('.');
+    if (partes.length === 2 && partes[1].length === 3) {
+      // "3.235" → ponto é milhar → remover
+      s = s.replace('.','');
+    }
+    // "44.62" → ponto é decimal → manter
   }
   return parseFloat(s) || 0;
 }
@@ -4782,6 +4792,11 @@ function processarGastos(workbook) {
     countOk++;
     if (ano===2025) count2025++;
     if (ano===2026) count2026++;
+    // Guardar maiores valores raw para debug
+    if (ano===2025 && tipo==='OPEX' && !window._topVals) window._topVals = [];
+    if (ano===2025 && tipo==='OPEX' && window._topVals && window._topVals.length < 5) {
+      window._topVals.push('raw=' + JSON.stringify(r[valKey]) + ' → ' + val);
+    }
     const cat = r['Categoria'] || 'Outros';
 
     d[ano][tipo][mes] += val;
@@ -4793,7 +4808,7 @@ function processarGastos(workbook) {
     else rawMes[ano][mes][tipo].push({n:cat, v:val});
   });
 
-  alert('BD_Gastos:\nTotal: ' + countTotal + '\nSem tipo: ' + countSemTipo + '\nSem ano: ' + countSemAno + '\nSem data: ' + countSemData + '\nSem valor: ' + countSemVal + '\nOK: ' + countOk + '\n2025: ' + count2025 + '\n2026: ' + count2026 + '\n\nD25 OPEX: ' + Math.round(d[2025].OPEX.reduce((s,v)=>s+v,0)) + '\nD25 CAPEX: ' + Math.round(d[2025].CAPEX.reduce((s,v)=>s+v,0)) + '\nD25 FINEX: ' + Math.round(d[2025].FINEX.reduce((s,v)=>s+v,0)));
+  alert('D25 OPEX: ' + Math.round(d[2025].OPEX.reduce((s,v)=>s+v,0)) + '\nD25 CAPEX: ' + Math.round(d[2025].CAPEX.reduce((s,v)=>s+v,0)) + '\nD25 FINEX: ' + Math.round(d[2025].FINEX.reduce((s,v)=>s+v,0)) + '\n\nPrimeiros 5 OPEX 2025:\n' + (window._topVals||[]).join('\n'));
   anos.forEach(ano => {
     for(let m=0;m<12;m++) {
       TIPOS_GASTO.forEach(tipo => {
