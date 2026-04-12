@@ -4768,20 +4768,25 @@ function processarGastos(workbook) {
   });
 
 
+  let countTotal=0, countSemTipo=0, countSemAno=0, countSemData=0, countSemVal=0, countOk=0;
+
   rows.forEach(r => {
+    countTotal++;
     const tipo = r['Tipo'];
-    if (!TIPOS_GASTO.includes(tipo)) return;
-    const anoRaw = parseFloat(r['Ano']);
-    if (!anos.includes(anoRaw)) return;
+    if (!TIPOS_GASTO.includes(tipo)) { countSemTipo++; return; }
+    const anoRaw = parseInt(parseFloat(r['Ano']));
+    if (!anos.includes(anoRaw)) { countSemAno++; return; }
     const ano = anoRaw;
-    const dtRaw = r['Data Transação Aj.'];
-    if (!dtRaw) return;
+    const dtKey = Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao') || k.includes('Aj.')) || 'Data Transação Aj.';
+    const dtRaw = r[dtKey];
+    if (!dtRaw) { countSemData++; return; }
     const dt = excelDateToJS(dtRaw);
-    if (isNaN(dt)) return;
+    if (isNaN(dt)) { countSemData++; return; }
     const mes = dt.getMonth();
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
-    if (val <= 0) return;
+    if (val <= 0) { countSemVal++; return; }
+    countOk++;
     const cat = r['Categoria'] || 'Outros';
 
     d[ano][tipo][mes] += val;
@@ -4793,7 +4798,7 @@ function processarGastos(workbook) {
     else rawMes[ano][mes][tipo].push({n:cat, v:val});
   });
 
-  // Ordenar e limitar rawMes
+  alert('BD_Gastos:\nTotal linhas: ' + countTotal + '\nSem tipo: ' + countSemTipo + '\nSem ano: ' + countSemAno + '\nSem data: ' + countSemData + '\nSem valor: ' + countSemVal + '\nProcessadas OK: ' + countOk);
   anos.forEach(ano => {
     for(let m=0;m<12;m++) {
       TIPOS_GASTO.forEach(tipo => {
@@ -4867,7 +4872,9 @@ function processarGastos(workbook) {
 function calcularResultado() {
   // Debug temporário
   const cats25opex = CATS25.OPEX.slice(0,5).map(c=>c.n+'='+c.v).join(', ');
-  alert('CATS25 OPEX top5: ' + cats25opex + '\nD25 OPEX total: ' + D25.OPEX.reduce((s,v)=>s+v,0));
+  const opex25 = D25.OPEX.reduce((s,v)=>s+v,0);
+  const opex26 = D26.OPEX.reduce((s,v)=>s+v,0);
+  alert('D25 OPEX: ' + opex25 + ' (esperado ~461k)\nD26 OPEX: ' + opex26 + '\nCATS25 top5: ' + cats25opex);
 
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
