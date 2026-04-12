@@ -4865,6 +4865,10 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
+  // Debug temporário
+  const cats25opex = CATS25.OPEX.slice(0,5).map(c=>c.n+'='+c.v).join(', ');
+  alert('CATS25 OPEX top5: ' + cats25opex + '\nD25 OPEX total: ' + D25.OPEX.reduce((s,v)=>s+v,0));
+
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
