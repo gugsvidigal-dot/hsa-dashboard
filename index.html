@@ -4749,7 +4749,7 @@ function processarGastos(workbook) {
   });
 
   const firstGasto = rows.find(r => TIPOS_GASTO.includes(r['Tipo']));
-  if (firstGasto) alert('1o gasto:\nTipo: ' + firstGasto['Tipo'] + '\nAno: ' + firstGasto['Ano'] + '\nData: ' + firstGasto['Data Transação Aj.'] + '\nValor: ' + firstGasto['Valor (R$)']);
+  if (firstGasto) alert('Colunas BD_Gastos:\n' + Object.keys(firstGasto).join('\n').slice(0,300));
 
   rows.forEach(r => {
     const tipo = r['Tipo'];
