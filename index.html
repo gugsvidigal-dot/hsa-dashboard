@@ -4519,23 +4519,13 @@ function parseMoeda(val) {
 }
 
 function parseGasto(val) {
-  // BD_Gastos usa formato BR: "3.235,51" = 3235.51, "300,00" = 300, "17,50" = 17.50
   if (!val) return 0;
   if (typeof val === 'number') return val;
-  let s = String(val).replace(/R\$\s*/g,'').trim();
+  let s = String(val).trim().replace(/^\s*R\$\s*/,'').trim();
   if (s.includes(',') && s.includes('.')) {
-    // "3.235,51" → remover pontos de milhar, trocar vírgula por ponto
     s = s.replace(/\./g,'').replace(',','.');
   } else if (s.includes(',')) {
-    // "300,00" → trocar vírgula por ponto
     s = s.replace(',','.');
-  } else if (s.includes('.')) {
-    // "3235.51" → já está correto (ponto decimal)
-    // mas se 3 dígitos após ponto, pode ser milhar
-    const partes = s.split('.');
-    if (partes.length === 2 && partes[1].length === 3) {
-      // ambíguo — manter como decimal (BD_Gastos raramente tem valores inteiros com 3 dígitos)
-    }
   }
   return parseFloat(s) || 0;
 }
@@ -4803,7 +4793,7 @@ function processarGastos(workbook) {
     else rawMes[ano][mes][tipo].push({n:cat, v:val});
   });
 
-  alert('BD_Gastos:\nTotal: ' + countTotal + '\nSem tipo: ' + countSemTipo + '\nSem ano: ' + countSemAno + '\nSem data: ' + countSemData + '\nSem valor: ' + countSemVal + '\nOK: ' + countOk + '\n2025: ' + count2025 + '\n2026: ' + count2026 + '\n\n1o valor 2025: ' + debugValor);
+  alert('BD_Gastos:\nTotal: ' + countTotal + '\nSem tipo: ' + countSemTipo + '\nSem ano: ' + countSemAno + '\nSem data: ' + countSemData + '\nSem valor: ' + countSemVal + '\nOK: ' + countOk + '\n2025: ' + count2025 + '\n2026: ' + count2026 + '\n\nD25 OPEX: ' + Math.round(d[2025].OPEX.reduce((s,v)=>s+v,0)) + '\nD25 CAPEX: ' + Math.round(d[2025].CAPEX.reduce((s,v)=>s+v,0)) + '\nD25 FINEX: ' + Math.round(d[2025].FINEX.reduce((s,v)=>s+v,0)));
   anos.forEach(ano => {
     for(let m=0;m<12;m++) {
       TIPOS_GASTO.forEach(tipo => {
