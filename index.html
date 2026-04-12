@@ -4602,7 +4602,7 @@ function processarVendas(workbook) {
   
   // Encontrar chaves dinamicamente uma vez
   const allKeys = valid.length > 0 ? Object.keys(valid[0]) : [];
-  const rbKey = allKeys.find(k => k.replace(/[\r\n]/g,'').trim() === 'Receita BrutaTotal') || '';
+  const rbKey = allKeys.find(k => k.includes('Bruta') && k.includes('Total')) || allKeys.find(k => k.includes('Bruta')) || '';
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
 
@@ -4644,7 +4644,7 @@ function processarVendas(workbook) {
     const mes = dt.getMonth();
     if (!vd[ano]) return;
 
-    const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.replace(/[\r\n]/g,'').trim() === 'Receita BrutaTotal')?.[1]);
+    const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.includes('Bruta') && k.includes('Total'))?.[1]);
     const rl = parseMoeda(r[rlKey]);
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
