@@ -4769,6 +4769,7 @@ function processarGastos(workbook) {
 
 
   let countTotal=0, countSemTipo=0, countSemAno=0, countSemData=0, countSemVal=0, countOk=0;
+  let count2025=0, count2026=0;
   let debugValor = '';
 
   rows.forEach(r => {
@@ -4789,6 +4790,8 @@ function processarGastos(workbook) {
     if (!debugValor && anoRaw===2025) debugValor = 'raw=' + JSON.stringify(r[valKey]) + ' parsed=' + val;
     if (val <= 0) { countSemVal++; return; }
     countOk++;
+    if (ano===2025) count2025++;
+    if (ano===2026) count2026++;
     const cat = r['Categoria'] || 'Outros';
 
     d[ano][tipo][mes] += val;
@@ -4800,7 +4803,7 @@ function processarGastos(workbook) {
     else rawMes[ano][mes][tipo].push({n:cat, v:val});
   });
 
-  alert('BD_Gastos:\nTotal linhas: ' + countTotal + '\nSem tipo: ' + countSemTipo + '\nSem ano: ' + countSemAno + '\nSem data: ' + countSemData + '\nSem valor: ' + countSemVal + '\nProcessadas OK: ' + countOk + '\n\n1o valor 2025: ' + debugValor);
+  alert('BD_Gastos:\nTotal: ' + countTotal + '\nSem tipo: ' + countSemTipo + '\nSem ano: ' + countSemAno + '\nSem data: ' + countSemData + '\nSem valor: ' + countSemVal + '\nOK: ' + countOk + '\n2025: ' + count2025 + '\n2026: ' + count2026 + '\n\n1o valor 2025: ' + debugValor);
   anos.forEach(ano => {
     for(let m=0;m<12;m++) {
       TIPOS_GASTO.forEach(tipo => {
