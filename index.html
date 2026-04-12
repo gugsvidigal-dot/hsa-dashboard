@@ -4793,9 +4793,9 @@ function processarGastos(workbook) {
     if (ano===2025) count2025++;
     if (ano===2026) count2026++;
     // Guardar maiores valores raw para debug
-    if (ano===2025 && tipo==='OPEX' && !window._topVals) window._topVals = [];
-    if (ano===2025 && tipo==='OPEX' && window._topVals && window._topVals.length < 5) {
-      window._topVals.push('raw=' + JSON.stringify(r[valKey]) + ' → ' + val);
+    if (ano===2025 && tipo==='OPEX') {
+      if (!window._allVals) window._allVals = [];
+      window._allVals.push({raw: r[valKey], val: val});
     }
     const cat = r['Categoria'] || 'Outros';
 
@@ -4808,7 +4808,8 @@ function processarGastos(workbook) {
     else rawMes[ano][mes][tipo].push({n:cat, v:val});
   });
 
-  alert('D25 OPEX: ' + Math.round(d[2025].OPEX.reduce((s,v)=>s+v,0)) + '\nD25 CAPEX: ' + Math.round(d[2025].CAPEX.reduce((s,v)=>s+v,0)) + '\nD25 FINEX: ' + Math.round(d[2025].FINEX.reduce((s,v)=>s+v,0)) + '\n\nPrimeiros 5 OPEX 2025:\n' + (window._topVals||[]).join('\n'));
+  const top5 = (window._allVals||[]).sort((a,b)=>b.val-a.val).slice(0,5).map(x=>'raw='+JSON.stringify(x.raw)+' → '+x.val);
+  alert('D25 OPEX: ' + Math.round(d[2025].OPEX.reduce((s,v)=>s+v,0)) + '\nD25 CAPEX: ' + Math.round(d[2025].CAPEX.reduce((s,v)=>s+v,0)) + '\nD25 FINEX: ' + Math.round(d[2025].FINEX.reduce((s,v)=>s+v,0)) + '\n\nTop 5 maiores OPEX 2025:\n' + top5.join('\n'));
   anos.forEach(ano => {
     for(let m=0;m<12;m++) {
       TIPOS_GASTO.forEach(tipo => {
