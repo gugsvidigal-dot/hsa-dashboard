@@ -4501,17 +4501,22 @@ function parseMoeda(val) {
   if (!val) return 0;
   if (typeof val === 'number') return val;
   let s = String(val).replace(/R\$\s*/g,'').trim();
-  // Detectar formato: se tem vírgula depois de ponto, é formato BR (1.234,56)
-  // Se tem ponto depois de vírgula, é formato US (1,234.56)
-  if (s.match(/\.\d{3}/) && !s.includes(',')) {
-    // Formato 1.234 (ponto como milhar sem decimal) — remover pontos
-    s = s.replace(/\./g,'');
-  } else if (s.match(/,\d{2}$/) || s.match(/,\d{1}$/)) {
-    // Formato BR: 1.234,56 — remover pontos de milhar, trocar vírgula por ponto
-    s = s.replace(/\./g,'').replace(',','.');
+  // Formato BR: vírgula é decimal, ponto é milhar
+  // Ex: "6.560" = 6560, "1.234,56" = 1234.56, "6,560" = 6560 (sem decimal cents)
+  if (s.includes(',')) {
+    // Tem vírgula — pode ser decimal ou milhar
+    const partes = s.split(',');
+    if (partes.length === 2 && partes[1].length <= 2) {
+      // Ex: "1.234,56" — vírgula é decimal
+      s = s.replace(/\./g,'').replace(',','.');
+    } else {
+      // Ex: "6,560" — vírgula é milhar (3 dígitos depois)
+      s = s.replace(/,/g,'');
+    }
   } else {
-    // Formato simples — remover pontos e vírgulas de milhar
-    s = s.replace(/\./g,'').replace(',','.');
+    // Sem vírgula — ponto pode ser milhar
+    // Ex: "6.560" ou "31.912"
+    s = s.replace(/\./g,'');
   }
   return parseFloat(s) || 0;
 }
@@ -4600,7 +4605,6 @@ function processarVendas(workbook) {
   const rbKey = allKeys.find(k => k.replace(/[\r\n]/g,'').trim() === 'Receita BrutaTotal') || '';
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
-  alert('Keys:\nrb=' + rbKey.slice(0,30) + '\nrl=' + rlKey + '\nmesAno=' + mesAnoKey + '\n\nEx valores:\nrb=' + (valid[0]?.[rbKey]) + '\nmesAno=' + (valid[0]?.[mesAnoKey]));
 
   // Inicializar estrutura por ano
   const anos = [2025, 2026];
@@ -4640,7 +4644,7 @@ function processarVendas(workbook) {
     const mes = dt.getMonth();
     if (!vd[ano]) return;
 
-    const rb = parseMoeda(r[rbKey]);
+    const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.replace(/[\r\n]/g,'').trim() === 'Receita BrutaTotal')?.[1]);
     const rl = parseMoeda(r[rlKey]);
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
