@@ -4519,21 +4519,24 @@ function parseMoeda(val) {
 }
 
 function parseGasto(val) {
-  // Para BD_Gastos: valores numéricos puros ou com ponto decimal
-  // Ex: 455.646 = 455.646 (ponto é decimal), 30906 = 30906
+  // BD_Gastos usa formato BR: "3.235,51" = 3235.51, "300,00" = 300, "17,50" = 17.50
   if (!val) return 0;
   if (typeof val === 'number') return val;
   let s = String(val).replace(/R\$\s*/g,'').trim();
-  // Se tem vírgula E ponto, ponto é decimal (formato EN)
   if (s.includes(',') && s.includes('.')) {
-    s = s.replace(/,/g,''); // remover vírgulas de milhar
-  } else if (s.includes(',') && !s.includes('.')) {
-    // Só vírgula — verificar se é milhar ou decimal
-    const partes = s.split(',');
-    if (partes[1] && partes[1].length === 3) { s = s.replace(',',''); }
-    else { s = s.replace(',','.'); }
+    // "3.235,51" → remover pontos de milhar, trocar vírgula por ponto
+    s = s.replace(/\./g,'').replace(',','.');
+  } else if (s.includes(',')) {
+    // "300,00" → trocar vírgula por ponto
+    s = s.replace(',','.');
+  } else if (s.includes('.')) {
+    // "3235.51" → já está correto (ponto decimal)
+    // mas se 3 dígitos após ponto, pode ser milhar
+    const partes = s.split('.');
+    if (partes.length === 2 && partes[1].length === 3) {
+      // ambíguo — manter como decimal (BD_Gastos raramente tem valores inteiros com 3 dígitos)
+    }
   }
-  // Com ou sem ponto, parseFloat trata ponto como decimal
   return parseFloat(s) || 0;
 }
 
