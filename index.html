@@ -4622,8 +4622,8 @@ function processarVendas(workbook) {
   const allKeys = valid.length > 0 ? Object.keys(valid[0]) : [];
   const rbKey = allKeys.find(k => k.includes('Bruta') && k.includes('Total')) || allKeys.find(k => k.includes('Bruta')) || '';
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
-  const pagsKey = allKeys.find(k => k.replace(/[\r\n\s]/g,'') === 'PagS(4,99%)') || 
-                  allKeys.find(k => k.replace(/[\r\n]/g,'').trim().startsWith('PagS')) || '';
+  const pagsKey = allKeys.find(k => k.replace(/[\r\n\s]/g,'').startsWith('PagS(')) || 
+                  allKeys[54] || ''; // fallback: coluna BC (índice 54)
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
 
   // Inicializar estrutura por ano
