@@ -4786,7 +4786,7 @@ function processarGastos(workbook) {
     const anoRaw = parseInt(parseFloat(r['Ano']));
     if (!anos.includes(anoRaw)) return;
     const ano = anoRaw;
-    const dtKey = Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao') || k.includes('Aj.')) || 'Data Transação Aj.';
+    const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao')) || 'Data Transação Aj.';
     const dtRaw = r[dtKey];
     if (!dtRaw) {
       if (ano===2026 && tipo==='OPEX') { if(!window._rej26) window._rej26=[]; window._rej26.push('SEM_DATA: '+JSON.stringify(r[Object.keys(r).find(k=>k.trim()==='Valor (R$)')||''])); }
@@ -4870,7 +4870,7 @@ function processarGastos(workbook) {
     const tipo = r['Tipo'];
     if (!TIPOS_GASTO.includes(tipo)) return;
     if (parseInt(parseFloat(r['Ano']))!==2025) return;
-    const dtKey = Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao') || k.includes('Aj.')) || 'Data Transação Aj.';
+    const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao')) || 'Data Transação Aj.';
     const dt = excelDateToJS(r[dtKey]);
     if (isNaN(dt) || dt.getMonth()>2) return;
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
