@@ -4910,9 +4910,9 @@ function calcularResultado() {
     // OPEX limpo por mês = OPEX - Booking - Expedia
     const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
 
-    // RecLiq = RecBruta - OTA(BD_Gastos) - PagS(Vendas_BD)
-    const pagsMes = V.pagsMes || Array(12).fill(0);
-    const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
+    // RecLiq = V.recLiq do Vendas_BD (já desconta PagS + Booking estimado + ISS)
+    // Nota: diferença entre Booking estimado e real é absorvida no OPEX
+    const recLiqRes = V.recLiq;
 
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
