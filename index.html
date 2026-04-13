@@ -4897,10 +4897,9 @@ function calcularResultado() {
   const all26 = (window._jan26||[]);
   const porMes = Array(12).fill(0);
   all26.forEach(x => { if(x.mes>=0 && x.mes<12) porMes[x.mes] += x.val; });
-  const rej26 = (window._rej26||[]).slice(0,5);
-  const top5 = all26.filter(x=>x.mes===0).sort((a,b)=>b.val-a.val).slice(0,3).map(x=>JSON.stringify(x.raw)+'→'+x.val);
-  const totalMes = all26.filter(x=>x.mes===0).reduce((s,x)=>s+x.val,0);
-  alert('OPEX 2026:\nJan=' + Math.round(porMes[0]) + '\nFev=' + Math.round(porMes[1]) + '\nMar=' + Math.round(porMes[2]) + '\nTotal linhas: ' + all26.length + '\n\nRejeitadas Jan/26:\n' + rej26.join('\n') + '\n\nJan top3:\n' + top5.join('\n'));
+  const rej26 = (window._rej26||[]).slice(0,3);
+  const maiores26 = all26.sort((a,b)=>b.val-a.val).slice(0,5).map(x=>'mes='+x.mes+' dt='+JSON.stringify(x.dtRaw)+' val='+x.val);
+  alert('OPEX 2026:\nJan=' + Math.round(porMes[0]) + '\nFev=' + Math.round(porMes[1]) + '\nMar=' + Math.round(porMes[2]) + '\nTotal linhas: ' + all26.length + '\n\nTop 5 maiores (todos meses):\n' + maiores26.join('\n'));
 
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
