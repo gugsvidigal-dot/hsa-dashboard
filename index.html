@@ -4622,6 +4622,7 @@ function processarVendas(workbook) {
   const allKeys = valid.length > 0 ? Object.keys(valid[0]) : [];
   const rbKey = allKeys.find(k => k.includes('Bruta') && k.includes('Total')) || allKeys.find(k => k.includes('Bruta')) || '';
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
+  const pagsKey = allKeys.find(k => k.replace(/[\r\n]/g,'').includes('PagS')) || '';
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
 
   // Inicializar estrutura por ano
@@ -4630,6 +4631,7 @@ function processarVendas(workbook) {
   anos.forEach(ano => {
     vd[ano] = {
       recBruta: Array(12).fill(0), recLiq: Array(12).fill(0),
+      pagsMes: Array(12).fill(0),
       diarias: Array(12).fill(0), reservas: Array(12).fill(0),
       canaisRec: {}, canaisDias: {}, canaisRes: {},
       canaisEvolMes: { Booking:Array(12).fill(0), Direto:Array(12).fill(0), Agência:Array(12).fill(0), Expedia:Array(12).fill(0) },
@@ -4664,6 +4666,7 @@ function processarVendas(workbook) {
 
     const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.includes('Bruta') && k.includes('Total'))?.[1]);
     const rl = parseMoeda(r[rlKey]);
+    const pags = pagsKey ? parseMoeda(r[pagsKey]) : 0; // negativo na planilha
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
     const chaleRaw = String(r['Chalé'] || '');
@@ -4672,6 +4675,7 @@ function processarVendas(workbook) {
 
     vd[ano].recBruta[mes] += rb;
     vd[ano].recLiq[mes]   += rl;
+    vd[ano].pagsMes[mes]  += Math.abs(pags); // PagS como positivo para facilitar cálculo
     vd[ano].diarias[mes]  += di;
     vd[ano].reservas[mes] += 1;
 
@@ -4755,6 +4759,7 @@ function processarVendas(workbook) {
       canaisMes,
       chales: {...v.chales}, chalesDiarias: {...v.chalesDiarias}, chalesReservas: {...v.chalesReservas},
       chalesTicket, chalesRevPAR,
+      pagsMes: v.pagsMes,
       subcanaisRec:  v.subcanaisRec  || {},
       subcanaisDias: v.subcanaisDias || {},
       subcanaisRes:  v.subcanaisRes  || {},
@@ -4788,27 +4793,13 @@ function processarGastos(workbook) {
     const ano = anoRaw;
     const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao')) || 'Data Transação Aj.';
     const dtRaw = r[dtKey];
-    if (!dtRaw) {
-      if (ano===2026 && tipo==='OPEX') { if(!window._rej26) window._rej26=[]; window._rej26.push('SEM_DATA: '+JSON.stringify(r[Object.keys(r).find(k=>k.trim()==='Valor (R$)')||''])); }
-      return;
-    }
+    if (!dtRaw) return;
     const dt = excelDateToJS(dtRaw);
-    if (isNaN(dt)) {
-      if (ano===2026 && tipo==='OPEX') { if(!window._rej26) window._rej26=[]; window._rej26.push('DATA_INV: '+JSON.stringify(dtRaw)+' val='+r[Object.keys(r).find(k=>k.trim()==='Valor (R$)')||'']); }
-      return;
-    }
+    if (isNaN(dt)) return;
     const mes = dt.getMonth();
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
-    if (val === 0 || isNaN(val)) {
-      if (ano===2026 && tipo==='OPEX' && mes===0) { if(!window._rej26) window._rej26=[]; window._rej26.push('VAL_ZERO: '+JSON.stringify(r[valKey])); }
-      return;
-    }
-    // Debug Jan/26 OPEX
-    if (ano===2026 && tipo==='OPEX') {
-      if (!window._jan26) window._jan26 = [];
-      window._jan26.push({raw: r[valKey], val: val, mes: mes, dtRaw: r[dtKey]});
-    }
+    if (val === 0 || isNaN(val)) return;
     const cat = r['Categoria'] || 'Outros';
 
     d[ano][tipo][mes] += val;
@@ -4893,14 +4884,6 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
-  // Debug Jan/26
-  const all26 = (window._jan26||[]);
-  const porMes = Array(12).fill(0);
-  all26.forEach(x => { if(x.mes>=0 && x.mes<12) porMes[x.mes] += x.val; });
-  const rej26 = (window._rej26||[]).slice(0,3);
-  const maiores26 = all26.sort((a,b)=>b.val-a.val).slice(0,5).map(x=>'mes='+x.mes+' dt='+JSON.stringify(x.dtRaw)+' val='+x.val);
-  alert('OPEX 2026:\nJan=' + Math.round(porMes[0]) + '\nFev=' + Math.round(porMes[1]) + '\nMar=' + Math.round(porMes[2]) + '\nTotal linhas: ' + all26.length + '\n\nTop 5 maiores (todos meses):\n' + maiores26.join('\n'));
-
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
@@ -4924,13 +4907,9 @@ function calcularResultado() {
     const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
 
     // RecLiq para Resultado = RecBruta - Booking(BD_Gastos) - Expedia(BD_Gastos) - PagS(Vendas_BD)
-    // PagS já está descontado na RecLiq do Vendas_BD, junto com Booking estimado
-    // Mas Booking real vem do BD_Gastos — então ajustamos:
-    // RecLiqResultado = RecBruta(Vendas) - OTA(BD_Gastos) - PagS(Vendas)
-    // Aproximação: RecLiq(Vendas) já tem Booking estimado descontado
-    // Usamos RecLiq do Vendas_BD diretamente (contém -Booking -PagS -ISS estimados)
-    // O ajuste fino entre Booking estimado vs real é absorvido pelo OPEX
-    const recLiqRes = V.recLiq; // RecLiq do Vendas_BD
+    // PagS vem do Vendas_BD por mês
+    const pagsMes = V.pagsMes || Array(12).fill(0);
+    const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
     const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
