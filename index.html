@@ -2797,6 +2797,7 @@ function setResAno(ano, btn){
 
 function renderResultado(){
   const R = RDATA[rAno];
+  if (!window._rdataDebug) { window._rdataDebug = true; alert('renderResultado: rAno=' + rAno + ' totRes1=' + R.totRes1 + ' res1[0]=' + R.res1[0]); }
   const rSel = window._rMesSel;
   const M = R.meses;
   const si=(id,h)=>{const e=document.getElementById(id);if(e)e.innerHTML=h;};
