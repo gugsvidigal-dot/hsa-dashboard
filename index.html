@@ -4788,13 +4788,22 @@ function processarGastos(workbook) {
     const ano = anoRaw;
     const dtKey = Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao') || k.includes('Aj.')) || 'Data Transação Aj.';
     const dtRaw = r[dtKey];
-    if (!dtRaw) return;
+    if (!dtRaw) {
+      if (ano===2026 && tipo==='OPEX') { if(!window._rej26) window._rej26=[]; window._rej26.push('SEM_DATA: '+JSON.stringify(r[Object.keys(r).find(k=>k.trim()==='Valor (R$)')||''])); }
+      return;
+    }
     const dt = excelDateToJS(dtRaw);
-    if (isNaN(dt)) return;
+    if (isNaN(dt)) {
+      if (ano===2026 && tipo==='OPEX') { if(!window._rej26) window._rej26=[]; window._rej26.push('DATA_INV: '+JSON.stringify(dtRaw)+' val='+r[Object.keys(r).find(k=>k.trim()==='Valor (R$)')||'']); }
+      return;
+    }
     const mes = dt.getMonth();
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
-    if (val === 0 || isNaN(val)) return;
+    if (val === 0 || isNaN(val)) {
+      if (ano===2026 && tipo==='OPEX' && mes===0) { if(!window._rej26) window._rej26=[]; window._rej26.push('VAL_ZERO: '+JSON.stringify(r[valKey])); }
+      return;
+    }
     // Debug Jan/26 OPEX
     if (ano===2026 && tipo==='OPEX') {
       if (!window._jan26) window._jan26 = [];
@@ -4888,10 +4897,10 @@ function calcularResultado() {
   const all26 = (window._jan26||[]);
   const porMes = Array(12).fill(0);
   all26.forEach(x => { if(x.mes>=0 && x.mes<12) porMes[x.mes] += x.val; });
+  const rej26 = (window._rej26||[]).slice(0,5);
   const top5 = all26.filter(x=>x.mes===0).sort((a,b)=>b.val-a.val).slice(0,3).map(x=>JSON.stringify(x.raw)+'→'+x.val);
   const totalMes = all26.filter(x=>x.mes===0).reduce((s,x)=>s+x.val,0);
-  // Contar linhas 2026 OPEX rejeitadas por data
-  alert('OPEX 2026 por mês (lido):\nJan=' + Math.round(porMes[0]) + '\nFev=' + Math.round(porMes[1]) + '\nMar=' + Math.round(porMes[2]) + '\n\nJan top3:\n' + top5.join('\n') + '\n\nTotal Jan lido: ' + Math.round(totalMes) + '\nTotal linhas OPEX 2026: ' + all26.length);
+  alert('OPEX 2026:\nJan=' + Math.round(porMes[0]) + '\nFev=' + Math.round(porMes[1]) + '\nMar=' + Math.round(porMes[2]) + '\nTotal linhas: ' + all26.length + '\n\nRejeitadas Jan/26:\n' + rej26.join('\n') + '\n\nJan top3:\n' + top5.join('\n'));
 
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
