@@ -1707,14 +1707,15 @@ function renderComp(){
     return s + (CATS25_JANMAR[t]||[]).reduce((ss,c)=>ss+c.v,0);
   },0);
   // Total 2026 Jan–Mar (apenas meses fechados) para cálculo correto do %
+  const cats26jm = window._CATS26_JANMAR || CATS26;
   const total26janmar = ['OPEX','CAPEX','FINEX'].reduce((s,t)=>{
-    return s + (CATS26[t]||[]).reduce((ss,c)=>ss+c.v,0);
+    return s + (cats26jm[t]||[]).reduce((ss,c)=>ss+c.v,0);
   },0);
 
   // Montar mapa de valores 2026 Jan–Mar por nome de categoria
   const map26 = {};
   ['OPEX','CAPEX','FINEX'].forEach(t => {
-    (CATS26[t]||[]).forEach(c => {
+    (cats26jm[t]||[]).forEach(c => {
       map26[c.n] = (map26[c.n]||0) + c.v;
     });
   });
@@ -4880,16 +4881,15 @@ function processarGastos(workbook) {
     else window.OTA_MES_26[mes] += val;
   });
 
-  // CATS25_JANMAR (jan-mar 2025 apenas)
+  // CATS25_JANMAR (jan-mar 2025 apenas — usando Data Transação Aj.)
   const cats25jm = { OPEX:{}, CAPEX:{}, FINEX:{} };
   rows.forEach(r => {
     const tipo = r['Tipo'];
     if (!TIPOS_GASTO.includes(tipo)) return;
-    if (parseInt(parseFloat(r['Ano']))!==2025) return;
-    const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao')) || 'Data Transação Aj.';
+    const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || 'Data Transação Aj.';
     const dt = excelDateToJS(r[dtKey]);
     if (isNaN(dt)) return;
-    // Filtrar apenas Jan-Mar de 2025 (ano E mês)
+    // Apenas Jan-Mar de 2025 (pela data ajustada)
     if (dt.getFullYear() !== 2025 || dt.getMonth() > 2) return;
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
@@ -4900,6 +4900,30 @@ function processarGastos(workbook) {
   CATS25_JANMAR.OPEX  = toArr(cats25jm.OPEX);
   CATS25_JANMAR.CAPEX = toArr(cats25jm.CAPEX);
   CATS25_JANMAR.FINEX = toArr(cats25jm.FINEX);
+
+  // CATS26_JANMAR (jan-mar 2026 apenas)
+  const cats26jm = { OPEX:{}, CAPEX:{}, FINEX:{} };
+  rows.forEach(r => {
+    const tipo = r['Tipo'];
+    if (!TIPOS_GASTO.includes(tipo)) return;
+    const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || 'Data Transação Aj.';
+    const dt = excelDateToJS(r[dtKey]);
+    if (isNaN(dt)) return;
+    if (dt.getFullYear() !== 2026 || dt.getMonth() > 2) return;
+    const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
+    const val = parseGasto(r[valKey]);
+    if (val === 0 || isNaN(val)) return;
+    const cat = r['Categoria']||'Outros';
+    cats26jm[tipo][cat] = (cats26jm[tipo][cat]||0)+val;
+  });
+  if (typeof CATS26_JANMAR !== 'undefined') {
+    CATS26_JANMAR.OPEX  = toArr(cats26jm.OPEX);
+    CATS26_JANMAR.CAPEX = toArr(cats26jm.CAPEX);
+    CATS26_JANMAR.FINEX = toArr(cats26jm.FINEX);
+  }
+  window._CATS26_JANMAR = { OPEX: toArr(cats26jm.OPEX), CAPEX: toArr(cats26jm.CAPEX), FINEX: toArr(cats26jm.FINEX) };
+  const sal26 = cats26jm.OPEX['Salários e Encargos'] || 0;
+  alert('Salários Jan-Mar/26: ' + Math.round(sal26));
 
   // RAW_MES
   if (typeof RAW_MES_25 !== 'undefined') {
