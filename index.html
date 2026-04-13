@@ -4857,7 +4857,7 @@ function processarGastos(workbook) {
   CATS26.CAPEX = toArr(cats[2026].CAPEX);
   CATS26.FINEX = toArr(cats[2026].FINEX);
 
-  // CATS25_JANMAR (jan-mar apenas)
+  // CATS25_JANMAR (jan-mar 2025 apenas)
   const cats25jm = { OPEX:{}, CAPEX:{}, FINEX:{} };
   rows.forEach(r => {
     const tipo = r['Tipo'];
@@ -4865,7 +4865,9 @@ function processarGastos(workbook) {
     if (parseInt(parseFloat(r['Ano']))!==2025) return;
     const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao')) || 'Data Transação Aj.';
     const dt = excelDateToJS(r[dtKey]);
-    if (isNaN(dt) || dt.getMonth()>2) return;
+    if (isNaN(dt)) return;
+    // Filtrar apenas Jan-Mar de 2025 (ano E mês)
+    if (dt.getFullYear() !== 2025 || dt.getMonth() > 2) return;
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
     if (val === 0 || isNaN(val)) return;
