@@ -4914,7 +4914,6 @@ function calcularResultado() {
   const ota25 = (window.OTA_MES_25||[]).reduce((s,v)=>s+v,0);
   const pags25 = (VDATA[2025]?.pagsMes||[]).reduce((s,v)=>s+v,0);
   const rb25 = (VDATA[2025]?.recBruta||[]).reduce((s,v)=>s+v,0);
-  alert('calcularResultado:\nOTA_MES_25 total=' + Math.round(ota25) + '\nPagS 2025=' + Math.round(pags25) + '\nRecBruta 2025=' + Math.round(rb25));
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
@@ -4938,6 +4937,7 @@ function calcularResultado() {
     const res1 = Array.from({length:nMeses}, (_,m) => Math.round(recLiqRes[m] - opexLimpo[m]));
     const res2 = res1.map((v, m) => v - (ga.CAPEX[m]||0));
     const res3 = res2.map((v, m) => v - (ga.FINEX[m]||0));
+    if (ano===2025) alert('R1 2025 calculado: ' + Math.round(res1.reduce((s,v)=>s+v,0)) + '\nRecLiq total: ' + Math.round(recLiqRes.reduce((s,v)=>s+v,0)) + '\nOPEX limpo total: ' + Math.round(opexLimpo.reduce((s,v)=>s+v,0)));
 
     RDATA[ano] = {
       meses:        ML.slice(0, nMeses),
@@ -4950,9 +4950,9 @@ function calcularResultado() {
       finex:        ga.FINEX.slice(0, nMeses),
       res1, res2, res3,
       totRecBruta:  V.recBruta.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totOTA:       otaTotal,
-      totPagS:      0,
-      totRecLiq:    V.recLiq.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totOTA:       otaMes.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totPagS:      pagsMes.slice(0,nMeses).reduce((s,v)=>s+v,0),
+      totRecLiq:    recLiqRes.slice(0,nMeses).reduce((s,v)=>s+v,0),
       totOpexSemOTA:opexLimpo.slice(0,nMeses).reduce((s,v)=>s+v,0),
       totRes1:      res1.reduce((s,v)=>s+v,0),
       totCapex:     ga.CAPEX.slice(0,nMeses).reduce((s,v)=>s+v,0),
