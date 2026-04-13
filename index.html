@@ -4911,6 +4911,15 @@ function calcularResultado() {
     const pagsMes = V.pagsMes || Array(12).fill(0);
     const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
 
+    if (ano===2025) {
+      const totRb = V.recBruta.reduce((s,v)=>s+v,0);
+      const totOta = otaMes.reduce((s,v)=>s+v,0);
+      const totPags = pagsMes.reduce((s,v)=>s+v,0);
+      const totRliq = recLiqRes.reduce((s,v)=>s+v,0);
+      const totOpex = opexLimpo.reduce((s,v)=>s+v,0);
+      alert('2025:\nRecBruta='+Math.round(totRb)+'\nOTA='+Math.round(totOta)+'\nPagS='+Math.round(totPags)+'\nRecLiq='+Math.round(totRliq)+'\nOPEX limpo='+Math.round(totOpex)+'\nRes1='+Math.round(totRliq-totOpex));
+    }
+
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
     const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
