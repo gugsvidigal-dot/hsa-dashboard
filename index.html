@@ -4603,6 +4603,7 @@ function processarExcel(workbook) {
   } catch(e) {
     dbxSetStatus('Erro ao processar Excel: ' + e.message, 'error');
     console.error(e);
+    esconderLoading();
   }
 }
 
@@ -5312,6 +5313,7 @@ function setLoadingMsg(msg) {
 }
 
 function esconderLoading() {
+  if (window._loadingTimeout) clearTimeout(window._loadingTimeout);
   document.getElementById('loading-overlay').style.display = 'none';
   document.querySelector('main').style.visibility = 'visible';
 }
@@ -5319,6 +5321,12 @@ function esconderLoading() {
 async function iniciarDashboard() {
   dbxFilePath = DBX_FILE_PATH;
   setLoadingMsg('Conectando ao Dropbox...');
+  // Fallback: se demorar mais de 20s, mostrar dashboard mesmo assim
+  const loadingTimeout = setTimeout(() => {
+    esconderLoading();
+    dbxSetStatus('⚠️ Timeout — dados podem estar desatualizados', 'error');
+  }, 20000);
+  window._loadingTimeout = loadingTimeout;
   if (!dbxToken) await dbxRenovarToken();
   if (typeof dbxAtualizarUI === 'function') dbxAtualizarUI();
   setTimeout(async () => {
