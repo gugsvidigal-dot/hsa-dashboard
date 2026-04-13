@@ -5280,7 +5280,7 @@ function atualizarBotaoDownload() {}
 </div>
 
 <!-- Loading overlay -->
-<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:#0F1117;z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:24px;">
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:#0F1117;z-index:9990;flex-direction:column;align-items:center;justify-content:center;gap:24px;">
   <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:var(--accent);">🏡 HSA Pousada</div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
     <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;"></div>
@@ -5288,6 +5288,8 @@ function atualizarBotaoDownload() {}
   </div>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script>
 // Hash simples da senha para não expor em texto claro
 const SENHA_HASH = btoa('Put@p0rr@1750#'); // base64 — ofuscação básica
 
