@@ -4624,7 +4624,6 @@ function processarVendas(workbook) {
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
   const pagsKey = allKeys.find(k => k.replace(/[\r\n]/g,'').includes('PagS')) || '';
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
-  alert('pagsKey='+JSON.stringify(pagsKey)+'\nrbKey='+JSON.stringify(rbKey.slice(0,30))+'\nrlKey='+JSON.stringify(rlKey.slice(0,30)));
 
   // Inicializar estrutura por ano
   const anos = [2025, 2026];
@@ -4667,7 +4666,9 @@ function processarVendas(workbook) {
 
     const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.includes('Bruta') && k.includes('Total'))?.[1]);
     const rl = parseMoeda(r[rlKey]);
-    const pags = pagsKey ? parseMoeda(r[pagsKey]) : 0; // negativo na planilha
+    // PagS vem como número negativo do SheetJS — usar valor absoluto
+    const pagsRaw = pagsKey ? r[pagsKey] : 0;
+    const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseMoeda(pagsRaw));
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
     const chaleRaw = String(r['Chalé'] || '');
@@ -4907,10 +4908,9 @@ function calcularResultado() {
     // OPEX limpo por mês = OPEX - Booking - Expedia
     const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
 
-    // RecLiq para Resultado = V.recLiq (já tem PagS descontado do Vendas_BD)
-    // Booking real vem do BD_Gastos via OPEX_limpo
-    const pagsMes = Array(12).fill(0); // não usado diretamente
-    const recLiqRes = V.recLiq;
+    // RecLiq = RecBruta - OTA(BD_Gastos) - PagS(Vendas_BD)
+    const pagsMes = V.pagsMes || Array(12).fill(0);
+    const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
 
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
