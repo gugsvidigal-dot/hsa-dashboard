@@ -4598,6 +4598,7 @@ function processarExcel(workbook) {
     // Renderizar resultado por padrão
     renderResultado();
     dbxSetStatus('✅ Dados atualizados com sucesso!', 'success');
+    esconderLoading();
     setTimeout(() => { const el = document.getElementById('res-sync-status'); if(el) el.style.display='none'; }, 4000);
   } catch(e) {
     dbxSetStatus('Erro ao processar Excel: ' + e.message, 'error');
@@ -4669,7 +4670,6 @@ function processarVendas(workbook) {
     const rl = parseMoeda(r[rlKey]);
     // PagS: pegar valor raw e logar os primeiros para debug
     const pagsRaw = pagsKey ? r[pagsKey] : 0;
-    if (!window._pagsDebug && pagsRaw) { window._pagsDebug = 'pagsKey='+JSON.stringify(pagsKey)+' raw='+JSON.stringify(pagsRaw)+' tipo='+typeof pagsRaw; }
     const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseGasto(String(pagsRaw || 0)));
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
@@ -4890,7 +4890,6 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
-  alert('PagS debug: ' + (window._pagsDebug || 'nenhum') + '\nPagS 2025 total: ' + Math.round((VDATA[2025]?.pagsMes||[]).reduce((s,v)=>s+v,0)) + '\nPagS 2026 Jan: ' + Math.round((VDATA[2026]?.pagsMes||[])[0]));
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
@@ -5279,7 +5278,15 @@ function atualizarBotaoDownload() {}
   </div>
 </div>
 
-<script>
+<!-- Loading overlay -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:#0F1117;z-index:9998;flex-direction:column;align-items:center;justify-content:center;gap:24px;">
+  <div style="font-family:'Cormorant Garamond',serif;font-size:32px;color:var(--accent);">🏡 HSA Pousada</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;"></div>
+    <div id="loading-msg" style="font-size:14px;color:var(--muted);">Conectando ao Dropbox...</div>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 // Hash simples da senha para não expor em texto claro
 const SENHA_HASH = btoa('Put@p0rr@1750#'); // base64 — ofuscação básica
 
@@ -5288,6 +5295,8 @@ function verificarSenha() {
   if (btoa(input) === SENHA_HASH) {
     sessionStorage.setItem('hsa_auth', '1');
     document.getElementById('senha-overlay').style.display = 'none';
+    document.getElementById('loading-overlay').style.display = 'flex';
+    document.querySelector('main').style.visibility = 'hidden';
     iniciarDashboard();
   } else {
     document.getElementById('senha-erro').textContent = 'Senha incorreta. Tente novamente.';
@@ -5297,16 +5306,28 @@ function verificarSenha() {
   }
 }
 
+function setLoadingMsg(msg) {
+  const el = document.getElementById('loading-msg');
+  if (el) el.textContent = msg;
+}
+
+function esconderLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.querySelector('main').style.visibility = 'visible';
+}
+
 async function iniciarDashboard() {
   dbxFilePath = DBX_FILE_PATH;
+  setLoadingMsg('Conectando ao Dropbox...');
   if (!dbxToken) await dbxRenovarToken();
   if (typeof dbxAtualizarUI === 'function') dbxAtualizarUI();
-  // Aguardar XLSX carregar antes de baixar o Excel
   setTimeout(async () => {
     if (typeof XLSX === 'undefined') {
+      esconderLoading();
       alert('XLSX não carregado — aguarde e recarregue a página');
       return;
     }
+    setLoadingMsg('Baixando planilha...');
     await dbxCarregarExcelAuto();
   }, 2000);
 }
@@ -5315,6 +5336,8 @@ async function iniciarDashboard() {
 window.addEventListener('load', () => {
   if (sessionStorage.getItem('hsa_auth') === '1') {
     document.getElementById('senha-overlay').style.display = 'none';
+    document.getElementById('loading-overlay').style.display = 'flex';
+    document.querySelector('main').style.visibility = 'hidden';
     iniciarDashboard();
   } else {
     setTimeout(() => {
