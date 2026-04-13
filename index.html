@@ -4624,6 +4624,7 @@ function processarVendas(workbook) {
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
   const pagsKey = allKeys.find(k => k.replace(/[\r\n]/g,'').includes('PagS')) || '';
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
+  alert('pagsKey='+JSON.stringify(pagsKey)+'\nrbKey='+JSON.stringify(rbKey.slice(0,30))+'\nrlKey='+JSON.stringify(rlKey.slice(0,30)));
 
   // Inicializar estrutura por ano
   const anos = [2025, 2026];
@@ -4906,19 +4907,11 @@ function calcularResultado() {
     // OPEX limpo por mês = OPEX - Booking - Expedia
     const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
 
-    // RecLiq para Resultado = RecBruta - Booking(BD_Gastos) - Expedia(BD_Gastos) - PagS(Vendas_BD)
-    // PagS vem do Vendas_BD por mês
-    const pagsMes = V.pagsMes || Array(12).fill(0);
-    const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
+    // RecLiq para Resultado = V.recLiq (já tem PagS descontado do Vendas_BD)
+    // Booking real vem do BD_Gastos via OPEX_limpo
+    const pagsMes = Array(12).fill(0); // não usado diretamente
+    const recLiqRes = V.recLiq;
 
-    if (ano===2025) {
-      const totRb = V.recBruta.reduce((s,v)=>s+v,0);
-      const totOta = otaMes.reduce((s,v)=>s+v,0);
-      const totPags = pagsMes.reduce((s,v)=>s+v,0);
-      const totRliq = recLiqRes.reduce((s,v)=>s+v,0);
-      const totOpex = opexLimpo.reduce((s,v)=>s+v,0);
-      alert('2025:\nRecBruta='+Math.round(totRb)+'\nOTA='+Math.round(totOta)+'\nPagS='+Math.round(totPags)+'\nRecLiq='+Math.round(totRliq)+'\nOPEX limpo='+Math.round(totOpex)+'\nRes1='+Math.round(totRliq-totOpex));
-    }
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
     const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
