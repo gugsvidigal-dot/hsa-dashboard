@@ -4622,7 +4622,8 @@ function processarVendas(workbook) {
   const allKeys = valid.length > 0 ? Object.keys(valid[0]) : [];
   const rbKey = allKeys.find(k => k.includes('Bruta') && k.includes('Total')) || allKeys.find(k => k.includes('Bruta')) || '';
   const rlKey = allKeys.find(k => k.includes('Receita') && (k.includes('Líq') || k.includes('Liq'))) || 'Receita Líq';
-  const pagsKey = allKeys.find(k => k.replace(/[\r\n]/g,'').includes('PagS')) || '';
+  const pagsKey = allKeys.find(k => k.replace(/[\r\n\s]/g,'') === 'PagS(4,99%)') || 
+                  allKeys.find(k => k.replace(/[\r\n]/g,'').trim().startsWith('PagS')) || '';
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
 
   // Inicializar estrutura por ano
@@ -4666,9 +4667,10 @@ function processarVendas(workbook) {
 
     const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.includes('Bruta') && k.includes('Total'))?.[1]);
     const rl = parseMoeda(r[rlKey]);
-    // PagS vem como número negativo do SheetJS — usar valor absoluto
+    // PagS: pegar valor raw e logar os primeiros para debug
     const pagsRaw = pagsKey ? r[pagsKey] : 0;
-    const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseMoeda(pagsRaw));
+    if (!window._pagsDebug && pagsRaw) { window._pagsDebug = 'pagsKey='+JSON.stringify(pagsKey)+' raw='+JSON.stringify(pagsRaw)+' tipo='+typeof pagsRaw; }
+    const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseMoeda(String(pagsRaw || 0)));
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
     const chaleRaw = String(r['Chalé'] || '');
@@ -4677,7 +4679,7 @@ function processarVendas(workbook) {
 
     vd[ano].recBruta[mes] += rb;
     vd[ano].recLiq[mes]   += rl;
-    vd[ano].pagsMes[mes]  += Math.abs(pags); // PagS como positivo para facilitar cálculo
+    vd[ano].pagsMes[mes]  += pags;
     vd[ano].diarias[mes]  += di;
     vd[ano].reservas[mes] += 1;
 
@@ -4888,6 +4890,7 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
+  alert('PagS debug: ' + (window._pagsDebug || 'nenhum') + '\nPagS 2025 total: ' + Math.round((VDATA[2025]?.pagsMes||[]).reduce((s,v)=>s+v,0)) + '\nPagS 2026 Jan: ' + Math.round((VDATA[2026]?.pagsMes||[])[0]));
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
@@ -4910,9 +4913,9 @@ function calcularResultado() {
     // OPEX limpo por mês = OPEX - Booking - Expedia
     const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
 
-    // RecLiq = V.recLiq do Vendas_BD (já desconta PagS + Booking estimado + ISS)
-    // Nota: diferença entre Booking estimado e real é absorvida no OPEX
-    const recLiqRes = V.recLiq;
+    // RecLiq = RecBruta - OTA(BD_Gastos) - PagS(Vendas_BD)
+    const pagsMes = V.pagsMes || Array(12).fill(0);
+    const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
 
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
