@@ -4795,10 +4795,10 @@ function processarGastos(workbook) {
     const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
     const val = parseGasto(r[valKey]);
     if (val === 0 || isNaN(val)) return;
-    // Debug Jan/26 OPEX
+    // Debug Jan/26 OPEX - guardar todos para mostrar os maiores
     if (ano===2026 && mes===0 && tipo==='OPEX') {
       if (!window._jan26) window._jan26 = [];
-      if (window._jan26.length < 8) window._jan26.push(JSON.stringify(r[valKey]) + '→' + val);
+      window._jan26.push({raw: r[valKey], val: val});
     }
     const cat = r['Categoria'] || 'Outros';
 
@@ -4885,8 +4885,9 @@ function processarGastos(workbook) {
 
 function calcularResultado() {
   // Debug Jan/26
-  const jan26vals = (window._jan26||[]).join('\n');
-  alert('Jan/26 OPEX primeiros 8:\n' + jan26vals + '\n\nD26 OPEX Jan: ' + Math.round(D26.OPEX[0]));
+  const top5jan26 = (window._jan26||[]).sort((a,b)=>b.val-a.val).slice(0,5).map(x=>JSON.stringify(x.raw)+'→'+x.val);
+  const totalJan26 = (window._jan26||[]).reduce((s,x)=>s+x.val,0);
+  alert('Jan/26 OPEX total lido: ' + Math.round(totalJan26) + '\nTop 5 maiores:\n' + top5jan26.join('\n') + '\n\nD26 OPEX Jan: ' + Math.round(D26.OPEX[0]));
 
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
