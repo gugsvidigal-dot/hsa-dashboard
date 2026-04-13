@@ -4670,7 +4670,7 @@ function processarVendas(workbook) {
     // PagS: pegar valor raw e logar os primeiros para debug
     const pagsRaw = pagsKey ? r[pagsKey] : 0;
     if (!window._pagsDebug && pagsRaw) { window._pagsDebug = 'pagsKey='+JSON.stringify(pagsKey)+' raw='+JSON.stringify(pagsRaw)+' tipo='+typeof pagsRaw; }
-    const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseMoeda(String(pagsRaw || 0)));
+    const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseGasto(String(pagsRaw || 0)));
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
     const chaleRaw = String(r['Chalé'] || '');
