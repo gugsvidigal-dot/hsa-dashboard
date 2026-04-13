@@ -4212,15 +4212,15 @@ function rfCalc() {
   const bookingComm = isBooking ? vtotalFinal * 0.21 : 0;
   rfSet('rf-booking-comm', bookingComm);
 
-  // ISS 2,0816%
+  // ISS 2,0816% — apenas informativo no formulário, NÃO entra na RecLiq (vai para OPEX)
   const iss = vtotalFinal * 0.020816;
   rfSet('rf-iss', iss);
 
   // PagS (já calculado em rfCalcPags)
   const pags = rfV('rf-pags');
 
-  // Receita Líquida = RecBruta - Booking - PagS - ISS
-  const recLiq = vtotalFinal - bookingComm - pags - iss;
+  // Receita Líquida = RecBruta - Booking - PagS (ISS não desconta — está no OPEX)
+  const recLiq = vtotalFinal - bookingComm - pags;
   rfSet('rf-rec-liq', recLiq);
 
   // Margem
@@ -4681,6 +4681,16 @@ function processarVendas(workbook) {
       vd[ano].canaisRes[canal]    += 1;
       vd[ano].canaisEvolMes[canal][mes] += rb;
     }
+
+    // Subcanal (Origem exata)
+    const subcanal = r['Origem'] ? String(r['Origem']).trim() : canal;
+    if (!vd[ano].subcanaisRec) vd[ano].subcanaisRec = {};
+    if (!vd[ano].subcanaisDias) vd[ano].subcanaisDias = {};
+    if (!vd[ano].subcanaisRes) vd[ano].subcanaisRes = {};
+    vd[ano].subcanaisRec[subcanal]  = (vd[ano].subcanaisRec[subcanal]  || 0) + rb;
+    vd[ano].subcanaisDias[subcanal] = (vd[ano].subcanaisDias[subcanal] || 0) + di;
+    vd[ano].subcanaisRes[subcanal]  = (vd[ano].subcanaisRes[subcanal]  || 0) + 1;
+
     if (CHALÉS.includes(chale)) {
       vd[ano].chales[chale]         += rb;
       vd[ano].chalesDiarias[chale]  += di;
@@ -4745,7 +4755,9 @@ function processarVendas(workbook) {
       canaisMes,
       chales: {...v.chales}, chalesDiarias: {...v.chalesDiarias}, chalesReservas: {...v.chalesReservas},
       chalesTicket, chalesRevPAR,
-      subcanaisRec: {}, subcanaisDias: {}, subcanaisRes: {},
+      subcanaisRec:  v.subcanaisRec  || {},
+      subcanaisDias: v.subcanaisDias || {},
+      subcanaisRes:  v.subcanaisRes  || {},
     };
   });
 }
@@ -4848,11 +4860,13 @@ function processarGastos(workbook) {
   rows.forEach(r => {
     const tipo = r['Tipo'];
     if (!TIPOS_GASTO.includes(tipo)) return;
-    if (parseFloat(r['Ano'])!==2025) return;
-    const dt = excelDateToJS(r['Data Transação Aj.']);
+    if (parseInt(parseFloat(r['Ano']))!==2025) return;
+    const dtKey = Object.keys(r).find(k => k.includes('Transação') || k.includes('Transacao') || k.includes('Aj.')) || 'Data Transação Aj.';
+    const dt = excelDateToJS(r[dtKey]);
     if (isNaN(dt) || dt.getMonth()>2) return;
-    const val = parseFloat(r['Valor (R$)'])||0;
-    if (val<=0) return;
+    const valKey = Object.keys(r).find(k => k.trim() === 'Valor (R$)') || 'Valor (R$)';
+    const val = parseGasto(r[valKey]);
+    if (val === 0 || isNaN(val)) return;
     const cat = r['Categoria']||'Outros';
     cats25jm[tipo][cat] = (cats25jm[tipo][cat]||0)+val;
   });
@@ -4870,6 +4884,10 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
+  // Debug OPEX 2026
+  const opex26mes = D26.OPEX.map(Math.round);
+  alert('OPEX 2026 por mês:\nJan=' + opex26mes[0] + '\nFev=' + opex26mes[1] + '\nMar=' + opex26mes[2] + '\nAbr=' + opex26mes[3] + '\nTotal=' + opex26mes.reduce((s,v)=>s+v,0));
+
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
@@ -5165,7 +5183,13 @@ function adicionarLinhaExcel(workbook, r) {
   wc('H',r.dataReserva,true); wc('J',r.reservaNum); wc('K',r.telefone); wc('L',r.email);
   wc('M',r.origem); wc('N',r.tarifa); wc('O',r.formaPgto); wc('P',r.origemPgto);
   wc('Q',r.juros); wc('R',r.meioPgto);
-  wc('S',r.entrada,true); wc('T',r.saida,true); wc('U',r.entrada,true);
+  wc('S',r.entrada,true); wc('T',r.saida,true);
+  // Mês/Ano como texto no formato "Jan-26"
+  const ML_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const dtE = new Date(r.entrada+'T12:00:00');
+  const mesAnoTxt = ML_ABREV[dtE.getMonth()] + '-' + String(dtE.getFullYear()).slice(2);
+  const mesAnoAddr = XLSX.utils.encode_cell({r: newRow, c: XLSX.utils.decode_col('U')});
+  ws[mesAnoAddr] = {v: mesAnoTxt, t: 's'};
   wc('V',r.diarias); wc('W',r.pax);
   wc('X',r.vTotalFinal); wc('Y',r.vTotalRes); wc('Z',r.vTabela);
   wc('AA',r.descLM); wc('AB',r.descGenius); wc('AC',r.descApp);
