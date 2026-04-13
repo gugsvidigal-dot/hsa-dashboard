@@ -4867,7 +4867,7 @@ function processarGastos(workbook) {
     const tipo = r['Tipo'];
     if (tipo !== 'OPEX') return;
     const cat = r['Categoria'] || '';
-    if (!['Booking','Expedia','EXPEDIA'].includes(cat)) return;
+    if (!['Booking','Expedia','EXPEDIA','Agência','Agencia'].includes(cat)) return;
     const anoRaw = parseInt(parseFloat(r['Ano']));
     if (![2025,2026].includes(anoRaw)) return;
     const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || 'Data Transação Aj.';
@@ -4919,6 +4919,7 @@ function calcularResultado() {
 
     // Booking e Expedia do BD_Gastos por mês (valores reais)
     const otaMes = (ano===2025 ? window.OTA_MES_25 : window.OTA_MES_26) || Array(12).fill(0);
+    if (ano===2025) alert('D25 OPEX total: ' + Math.round(ga.OPEX.reduce((s,v)=>s+v,0)) + '\nOTA total: ' + Math.round(otaMes.reduce((s,v)=>s+v,0)) + '\nOPEX limpo: ' + Math.round(ga.OPEX.reduce((s,v)=>s+v,0) - otaMes.reduce((s,v)=>s+v,0)));
 
     // OPEX limpo por mês = OPEX - Booking - Expedia (reais)
     const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
