@@ -4884,17 +4884,13 @@ function processarGastos(workbook) {
 }
 
 function calcularResultado() {
-  // Debug OPEX 2026
-  const opex26mes = D26.OPEX.map(Math.round);
-  alert('OPEX 2026 por mês:\nJan=' + opex26mes[0] + '\nFev=' + opex26mes[1] + '\nMar=' + opex26mes[2] + '\nAbr=' + opex26mes[3] + '\nTotal=' + opex26mes.reduce((s,v)=>s+v,0));
-
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
     const ga   = ano===2025 ? D25 : D26;
     const cats = ano===2025 ? CATS25 : CATS26;
 
-    // OPEX limpo = OPEX total do BD_Gastos - Booking - Expedia (já descontados da RecLiq)
+    // Booking e Expedia do BD_Gastos (para descontar da RecBruta)
     const bkCat = cats.OPEX.find(c => c.n==='Booking');
     const exCat = cats.OPEX.find(c => c.n==='Expedia' || c.n==='EXPEDIA');
     const bkTotal = bkCat ? bkCat.v : 0;
@@ -4904,13 +4900,25 @@ function calcularResultado() {
     const opexTotal = ga.OPEX.reduce((s,v)=>s+v,0);
     const otaProp   = opexTotal > 0 ? otaTotal / opexTotal : 0;
 
-    // OPEX limpo por mês (proporcional)
-    const opexLimpo = ga.OPEX.map(v => Math.round(v * (1 - otaProp)));
+    // Booking + Expedia por mês (proporcional à distribuição mensal do OPEX)
+    const otaMes = ga.OPEX.map(v => Math.round(v * otaProp));
+
+    // OPEX limpo por mês = OPEX - Booking - Expedia
+    const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
+
+    // RecLiq para Resultado = RecBruta - Booking(BD_Gastos) - Expedia(BD_Gastos) - PagS(Vendas_BD)
+    // PagS já está descontado na RecLiq do Vendas_BD, junto com Booking estimado
+    // Mas Booking real vem do BD_Gastos — então ajustamos:
+    // RecLiqResultado = RecBruta(Vendas) - OTA(BD_Gastos) - PagS(Vendas)
+    // Aproximação: RecLiq(Vendas) já tem Booking estimado descontado
+    // Usamos RecLiq do Vendas_BD diretamente (contém -Booking -PagS -ISS estimados)
+    // O ajuste fino entre Booking estimado vs real é absorvido pelo OPEX
+    const recLiqRes = V.recLiq; // RecLiq do Vendas_BD
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
     const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-    const res1 = ga.OPEX.slice(0,nMeses).map((_, m) => Math.round(V.recLiq[m] - opexLimpo[m]));
+    const res1 = Array.from({length:nMeses}, (_,m) => Math.round(recLiqRes[m] - opexLimpo[m]));
     const res2 = res1.map((v, m) => v - (ga.CAPEX[m]||0));
     const res3 = res2.map((v, m) => v - (ga.FINEX[m]||0));
 
