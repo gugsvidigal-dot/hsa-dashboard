@@ -4425,8 +4425,14 @@ function salvarReserva(event) {
 
   // Gravar no Dropbox
   if (excelWorkbook && dbxToken && dbxFilePath) {
-    adicionarLinhaExcel(excelWorkbook, reserva);
-    dbxSalvarExcel(excelWorkbook);
+    try {
+      adicionarLinhaExcel(excelWorkbook, reserva);
+      dbxSalvarExcel(excelWorkbook).then(ok => {
+        alert(ok ? '✅ Salvo no Dropbox!' : '❌ Erro ao salvar no Dropbox');
+      }).catch(e => alert('Erro dbxSalvar: ' + e.message));
+    } catch(e) {
+      alert('Erro adicionarLinha: ' + e.message + '\n' + e.stack?.slice(0,200));
+    }
   } else {
     const motivo = !excelWorkbook ? 'Excel não carregado' : !dbxToken ? 'Token Dropbox inválido' : 'Caminho não definido';
     dbxSetStatus('⚠️ Não foi possível sincronizar: ' + motivo, 'info');
