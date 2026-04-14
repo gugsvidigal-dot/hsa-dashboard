@@ -4332,8 +4332,6 @@ function salvarReserva(event) {
   const status  = document.getElementById('rf-status')?.value;
   const origem  = document.getElementById('rf-origem')?.value;
 
-  alert('salvarReserva:\nChalé=' + chale + '\nEntrada=' + entrada + '\nDiárias=' + diarias + '\nRecBruta=' + rb + '\nExcel=' + (excelWorkbook ? 'OK' : 'NULL') + '\nToken=' + (dbxToken ? 'OK' : 'NULL'));
-
   if (!chale || !entrada || !diarias || !rb) {
     alert('Preencha pelo menos: Chalé, Entrada, Saída e Valores.'); return;
   }
