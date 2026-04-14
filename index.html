@@ -4332,6 +4332,8 @@ function salvarReserva(event) {
   const status  = document.getElementById('rf-status')?.value;
   const origem  = document.getElementById('rf-origem')?.value;
 
+  alert('salvarReserva:\nChalé=' + chale + '\nEntrada=' + entrada + '\nDiárias=' + diarias + '\nRecBruta=' + rb + '\nExcel=' + (excelWorkbook ? 'OK' : 'NULL') + '\nToken=' + (dbxToken ? 'OK' : 'NULL'));
+
   if (!chale || !entrada || !diarias || !rb) {
     alert('Preencha pelo menos: Chalé, Entrada, Saída e Valores.'); return;
   }
@@ -4428,7 +4430,9 @@ function salvarReserva(event) {
     adicionarLinhaExcel(excelWorkbook, reserva);
     dbxSalvarExcel(excelWorkbook);
   } else {
-    dbxSetStatus('⚠️ Conecte e carregue o Excel do Dropbox para sincronizar.', 'info');
+    const motivo = !excelWorkbook ? 'Excel não carregado' : !dbxToken ? 'Token Dropbox inválido' : 'Caminho não definido';
+    dbxSetStatus('⚠️ Não foi possível sincronizar: ' + motivo, 'info');
+    alert('Reserva salva localmente mas NÃO sincronizada com Dropbox.\nMotivo: ' + motivo);
   }
 
   renderLista();
@@ -5330,7 +5334,7 @@ const SENHA_HASH = btoa('Put@p0rr@1750#'); // base64 — ofuscação básica
 function verificarSenha() {
   const input = document.getElementById('senha-input').value;
   if (btoa(input) === SENHA_HASH) {
-    sessionStorage.setItem('hsa_auth', '1');
+    localStorage.setItem('hsa_auth', '1');
     document.getElementById('senha-overlay').style.display = 'none';
     document.getElementById('loading-overlay').style.display = 'flex';
     iniciarDashboard();
@@ -5377,7 +5381,7 @@ async function iniciarDashboard() {
 
 // Verificar autenticação ao carregar
 window.addEventListener('load', () => {
-  if (sessionStorage.getItem('hsa_auth') === '1') {
+  if (localStorage.getItem('hsa_auth') === '1') {
     document.getElementById('senha-overlay').style.display = 'none';
     document.getElementById('loading-overlay').style.display = 'flex';
     iniciarDashboard();
