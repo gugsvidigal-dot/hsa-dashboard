@@ -4324,7 +4324,6 @@ function atualizarPreview() {
 }
 
 function salvarReserva(event) {
-  alert('INICIO salvarReserva');
   const chale   = document.getElementById('rf-chale')?.value;
   const entrada = document.getElementById('rf-entrada')?.value;
   const diarias = rfV('rf-diarias');
@@ -4333,13 +4332,7 @@ function salvarReserva(event) {
   const status  = document.getElementById('rf-status')?.value;
   const origem  = document.getElementById('rf-origem')?.value;
 
-  alert('Dados: chale=' + chale + ' entrada=' + entrada + ' diarias=' + diarias + ' rb=' + rb);
-
   if (!chale || !entrada || !diarias || !rb) {
-    alert('FALHOU validação: chale=' + !!chale + ' entrada=' + !!entrada + ' diarias=' + !!diarias + ' rb=' + !!rb);
-    return;
-  }
-  alert('Validação OK, continuando...');
     alert('Preencha pelo menos: Chalé, Entrada, Saída e Valores.'); return;
   }
 
