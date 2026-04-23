@@ -2387,7 +2387,10 @@ function renderVendas(){
   // KPIs
   const s = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const si = (id,h)=>{const e=document.getElementById(id);if(e)e.innerHTML=h;};
+  const totalExtras = (V.extrasMes||Array(12).fill(0)).reduce((s,v)=>s+(v||0),0);
+  const totalHosp   = totalBruto - totalExtras;
   si('vk-bruto',  `<small>R$</small> ${(totalBruto/1000).toFixed(1)}<small>k</small>`);
+  s('vk-note1', totalExtras>0 ? `Hosp: R$${(totalHosp/1000).toFixed(1)}k · Extras: R$${(totalExtras/1000).toFixed(1)}k` : 'Antes de OTA e PagS');
   const totalOTA = totalBruto - totalLiq;
   si('vk-ota',    `<small>R$</small> ${(totalOTA/1000).toFixed(1)}<small>k</small>`);
   s('vk-ota-tag', `${(totalOTA/totalBruto*100).toFixed(1)}% da Rec. Bruta`);
@@ -4847,6 +4850,10 @@ function processarVendas(workbook) {
   const pagsKey = allKeys.find(k => k.replace(/[\r\n\s]/g,'').startsWith('PagS(')) || 
                   allKeys[54] || ''; // fallback: coluna BC (índice 54)
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
+  // Coluna Valor Total da Reserva (sem extras) para calcular extras = RecBruta - ValorRes
+  const vresKey = allKeys.find(k => k.replace(/[\r\n]/g,'').trim() === 'Valor Total da Reserva') ||
+                  allKeys.find(k => k.includes('Total') && k.includes('Reserva') && !k.includes('Extras') && !k.includes('Bruta')) || '';
+  alert('vresKey=' + JSON.stringify(vresKey) + '\nCandidatas: ' + allKeys.filter(k=>k.includes('Total')||k.includes('Reserva')).map(k=>JSON.stringify(k)).join(', '));
 
   // Inicializar estrutura por ano
   const anos = [2025, 2026];
@@ -4854,7 +4861,7 @@ function processarVendas(workbook) {
   anos.forEach(ano => {
     vd[ano] = {
       recBruta: Array(12).fill(0), recLiq: Array(12).fill(0),
-      pagsMes: Array(12).fill(0),
+      pagsMes: Array(12).fill(0), extrasMes: Array(12).fill(0),
       diarias: Array(12).fill(0), reservas: Array(12).fill(0),
       canaisRec: {}, canaisDias: {}, canaisRes: {},
       canaisEvolMes: { Booking:Array(12).fill(0), Direto:Array(12).fill(0), Agência:Array(12).fill(0), Expedia:Array(12).fill(0) },
@@ -4889,9 +4896,10 @@ function processarVendas(workbook) {
 
     const rb = parseMoeda(r[rbKey] || Object.entries(r).find(([k]) => k.includes('Bruta') && k.includes('Total'))?.[1]);
     const rl = parseMoeda(r[rlKey]);
-    // PagS: pegar valor raw e logar os primeiros para debug
     const pagsRaw = pagsKey ? r[pagsKey] : 0;
     const pags = typeof pagsRaw === 'number' ? Math.abs(pagsRaw) : Math.abs(parseGasto(String(pagsRaw || 0)));
+    const vres = vresKey ? parseMoeda(r[vresKey]) : 0;
+    const extras = vresKey && vres > 0 ? Math.max(0, rb - vres) : 0;
     const di = parseMoeda(r['# Diárias'] || r['# Di\u00e1rias']);
     const canal = getCanal(r['Origem']);
     const chaleRaw = String(r['Chalé'] || '');
@@ -4901,6 +4909,7 @@ function processarVendas(workbook) {
     vd[ano].recBruta[mes] += rb;
     vd[ano].recLiq[mes]   += rl;
     vd[ano].pagsMes[mes]  += pags;
+    vd[ano].extrasMes[mes]+= extras;
     vd[ano].diarias[mes]  += di;
     vd[ano].reservas[mes] += 1;
 
@@ -4985,6 +4994,7 @@ function processarVendas(workbook) {
       chales: {...v.chales}, chalesDiarias: {...v.chalesDiarias}, chalesReservas: {...v.chalesReservas},
       chalesTicket, chalesRevPAR,
       pagsMes: v.pagsMes,
+      extrasMes: v.extrasMes,
       subcanaisRec:  v.subcanaisRec  || {},
       subcanaisDias: v.subcanaisDias || {},
       subcanaisRes:  v.subcanaisRes  || {},
