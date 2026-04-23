@@ -2995,22 +2995,24 @@ function renderResultado(){
     const bdrClr1 = M.map((_,i)=>isFechado(i)?'#34C77B':'rgba(52,199,123,.4)');
     const bdrClr2 = M.map((_,i)=>isFechado(i)?'#F0B429':'rgba(240,180,41,.4)');
     const bdrClr3 = M.map((_,i)=>isFechado(i)?'#5B8DEF':'rgba(91,141,239,.4)');
+    // Segmento é estimado se qualquer um dos dois pontos for aberto
+    const segFechado = ctx => isFechado(ctx.p0DataIndex) && isFechado(ctx.p1DataIndex);
     mk('cr_acum',{type:'line',data:{labels:M,datasets:[
     {label:'① Após OPEX',  data:acum1,
-     segment:{borderColor:ctx=>isFechado(ctx.p0DataIndex)?'#34C77B':'rgba(52,199,123,.4)',
-               borderDash:ctx=>isFechado(ctx.p0DataIndex)?[]:[4,4]},
+     segment:{borderColor:ctx=>segFechado(ctx)?'#34C77B':'rgba(52,199,123,.4)',
+               borderDash:ctx=>segFechado(ctx)?[]:[5,4]},
      borderColor:'#34C77B',backgroundColor:'rgba(52,199,123,.08)',
      borderWidth:2.5,pointRadius:4,pointBackgroundColor:ptClr1,
      tension:.35,fill:false},
     {label:'② Após CAPEX', data:acum2,
-     segment:{borderColor:ctx=>isFechado(ctx.p0DataIndex)?'#F0B429':'rgba(240,180,41,.4)',
-               borderDash:ctx=>isFechado(ctx.p0DataIndex)?[5,3]:[4,4]},
+     segment:{borderColor:ctx=>segFechado(ctx)?'#F0B429':'rgba(240,180,41,.4)',
+               borderDash:ctx=>segFechado(ctx)?[5,3]:[5,4]},
      borderColor:'#F0B429',backgroundColor:'rgba(240,180,41,.06)',
      borderWidth:2,pointRadius:3,pointBackgroundColor:ptClr2,
      tension:.35,fill:false,borderDash:[5,3]},
     {label:'③ Após FINEX', data:acum3,
-     segment:{borderColor:ctx=>isFechado(ctx.p0DataIndex)?'#5B8DEF':'rgba(91,141,239,.4)',
-               borderDash:ctx=>isFechado(ctx.p0DataIndex)?[2,3]:[4,4]},
+     segment:{borderColor:ctx=>segFechado(ctx)?'#5B8DEF':'rgba(91,141,239,.4)',
+               borderDash:ctx=>segFechado(ctx)?[2,3]:[5,4]},
      borderColor:'#5B8DEF',backgroundColor:'rgba(91,141,239,.06)',
      borderWidth:2,pointRadius:3,pointBackgroundColor:ptClr3,
      tension:.35,fill:false,borderDash:[2,3]},
@@ -3212,31 +3214,44 @@ function renderResultado(){
       <p>Fevereiro (cobertura OPEX 20%) e Outubro (42%) são os meses mais fracos. Gastos fixos continuam mesmo com baixíssima receita.</p>
     </div></div>`;
 
-  const ins26=`
-    <div class="insight"><div class="ins-icon alert">🔴</div><div class="ins-body">
-      <h4>① Resultado Operacional: déficit de −R$ 844</h4>
-      <p>Janeiro positivo (+R$ 400), Fev quase empatado (−R$ 145) e Mar negativo (−R$ 1.099). RecLiq de R$ 74,1k vs OPEX sem OTA de R$ 74,9k — faltaram ~R$ 281/mês de média.</p>
+  const ins26 = (() => {
+    const r1m = R.res1.slice(0,nFechados), r2m = R.res2.slice(0,nFechados), r3m = R.res3.slice(0,nFechados);
+    const melhorMesR1 = r1m.indexOf(Math.max(...r1m));
+    const piorMesR1   = r1m.indexOf(Math.min(...r1m));
+    const cobPctNum   = parseFloat((fRL/fOP*100).toFixed(1));
+    const icone1 = fR1>=0 ? 'good' : 'alert';
+    const emoji1 = fR1>=0 ? '✅' : '🔴';
+    const icone2 = fR2>=0 ? 'good' : 'alert';
+    const emoji2 = fR2>=0 ? '✅' : '🔴';
+    const icone3 = fR3>=0 ? 'good' : 'alert';
+    const emoji3 = fR3>=0 ? '✅' : '🔴';
+    const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const detMeses = r1m.map((v,i)=>`${ML[i]} ${v>=0?'+':''}${fK(v)}`).join(', ');
+    const totCX = R.capex.slice(0,nFechados).reduce((s,v)=>s+(v||0),0);
+    const totFX = R.finex.slice(0,nFechados).reduce((s,v)=>s+(v||0),0);
+    const fxMes = Math.round(totFX/nFechados);
+    return `
+    <div class="insight"><div class="ins-icon ${icone1}">${emoji1}</div><div class="ins-body">
+      <h4>① Resultado Operacional: ${fR1>=0?'superávit de +':'déficit de '}${fK(Math.abs(fR1))} (Jan–Mar)</h4>
+      <p>${detMeses}. RecLiq de ${fK(fRL)} vs OPEX limpo de ${fK(fOP)} — cobertura de ${cobPctNum}%.</p>
     </div></div>
-    <div class="insight"><div class="ins-icon alert">🔴</div><div class="ins-body">
-      <h4>② Após CAPEX: déficit de −R$ 6,0k</h4>
-      <p>R$ 5,2k em CAPEX no trimestre (Energia Solar R$ 4,1k + Lavanderia R$ 1,3k) aprofundou o déficit. Jan o único mês próximo do zero após CAPEX (−R$ 657).</p>
+    <div class="insight"><div class="ins-icon ${icone2}">${emoji2}</div><div class="ins-body">
+      <h4>② Após CAPEX: ${fR2>=0?'superávit de +':'déficit de '}${fK(Math.abs(fR2))}</h4>
+      <p>CAPEX de ${fK(totCX)} no trimestre (~${fK(Math.round(totCX/nFechados))}/mês). ${fR2>=0?'Resultado positivo mesmo após investimentos.':'Aprofundou o déficit operacional.'}</p>
     </div></div>
-    <div class="insight"><div class="ins-icon alert">🔴</div><div class="ins-body">
-      <h4>③ Após FINEX: déficit de −R$ 24,5k</h4>
-      <p>FINEX de R$ 18,5k no trimestre (~R$ 6,2k/mês em empréstimos + antecipação) é o principal dreno. Resultado final: Jan −R$ 7,4k, Fev −R$ 7,3k, Mar −R$ 9,8k.</p>
+    <div class="insight"><div class="ins-icon ${icone3}">${emoji3}</div><div class="ins-body">
+      <h4>③ Após FINEX: ${fR3>=0?'superávit de +':'déficit de '}${fK(Math.abs(fR3))}</h4>
+      <p>FINEX de ${fK(totFX)} no trimestre (~${fK(fxMes)}/mês em empréstimos). Resultado final: ${r3m.map((v,i)=>`${ML[i]} ${v>=0?'+':''}${fK(v)}`).join(', ')}.</p>
     </div></div>
-    <div class="insight"><div class="ins-icon good">✅</div><div class="ins-body">
-      <h4>Operação quase no breakeven</h4>
-      <p>A cobertura de OPEX foi de 98,9% — apenas R$ 844 de déficit operacional no trimestre. A operação está muito próxima do ponto de equilíbrio antes de CAPEX e FINEX.</p>
-    </div></div>
-    <div class="insight"><div class="ins-icon info">📊</div><div class="ins-body">
-      <h4>Canal direto: 37,3% da receita Jan–Jul</h4>
-      <p>R$ 45,7k via direto vs R$ 64,0k pelo Booking. Crescimento expressivo vs 2025 — menos comissões OTA, maior margem líquida por reserva.</p>
+    <div class="insight"><div class="ins-icon ${cobPctNum>=100?'good':'warn'}">${cobPctNum>=100?'✅':'⚠️'}</div><div class="ins-body">
+      <h4>Cobertura OPEX: ${cobPctNum}%</h4>
+      <p>${cobPctNum>=100?'Receita líquida cobre todo o OPEX — operação no positivo.':'Receita líquida não cobre totalmente o OPEX — faltaram '+fK(Math.round(fOP-fRL))+' no trimestre.'}</p>
     </div></div>
     <div class="insight"><div class="ins-icon info">💡</div><div class="ins-body">
-      <h4>FINEX é o principal problema estrutural</h4>
-      <p>Com ~R$ 6,2k/mês em FINEX, a operação precisa gerar em torno de R$ 32k/mês de RecLiq para cobrir OPEX + FINEX. Reduzir o endividamento é a principal alavanca de resultado.</p>
+      <h4>FINEX como alavanca de resultado</h4>
+      <p>Com ${fK(fxMes)}/mês em FINEX, reduzir o endividamento é a principal alavanca para melhorar o resultado final. Sem FINEX, o resultado seria ${fK(Math.round(fR3+totFX))} no trimestre.</p>
     </div></div>`;
+  })();
 
   document.getElementById('res-insights').innerHTML = rAno===2025 ? ins25 : ins26;
   renderCompResultado();
@@ -5155,7 +5170,6 @@ function calcularResultado() {
 
 
     const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
-    if (ano===2026) alert('2026 nMeses=' + nMeses + '\nrecBruta=' + V.recBruta.slice(0,8).map(Math.round).join(',') + '\nOPEX=' + ga.OPEX.slice(0,4).map(Math.round).join(','));
     const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
     const res1 = Array.from({length:nMeses}, (_,m) => Math.round(recLiqRes[m] - opexLimpo[m]));
