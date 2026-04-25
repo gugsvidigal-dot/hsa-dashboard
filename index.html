@@ -2526,7 +2526,7 @@ function renderCalendarioMensal(ano, mes) {
   }
 
 
-  // ── Mapear ocupação: ocup[chale][dia] = {tipo, canal, rb} ──
+  // ── Mapear ocupação ──
   const ocup = {};
   CHAL.forEach(c => { ocup[c] = {}; });
 
@@ -2535,38 +2535,31 @@ function renderCalendarioMensal(ano, mes) {
     const dtE = new Date(r.entrada + 'T12:00:00');
     const dtS = new Date(r.saida   + 'T12:00:00');
 
-    // Primeiro dia visível desta reserva no mês (pode ser dia 1 se entrou antes)
-    const primeiroDiaNoMes = (dtE.getFullYear() === ano && dtE.getMonth() === mes)
-      ? dtE.getDate() : 1;
-    const checkinNoMes = dtE.getFullYear() === ano && dtE.getMonth() === mes;
-    const checkoutNoMes = dtS.getFullYear() === ano && dtS.getMonth() === mes;
-
     for (let d = 1; d <= diasNoMes; d++) {
-      const dtD      = new Date(ano, mes, d);
-      const noite    = dtD >= dtE && dtD < dtS; // ocupa a noite do dia d
+      const dtD  = new Date(ano, mes, d, 12);
+      const noite = dtD >= dtE && dtD < dtS;
+      if (!noite) continue;
 
-      if (!noite) {
-        // Dia de checkout: chalé livre mas marcar saída
-        if (checkoutNoMes && dtS.getDate() === d) {
-          // Só marca checkout se não há outra reserva ocupando (checkin no mesmo dia)
-          if (!ocup[r.chale][d] || ocup[r.chale][d].tipo === 'checkout') {
-            ocup[r.chale][d] = { tipo: 'checkout', canal: r.canal };
-          }
-        }
-        continue;
-      }
+      // Já tem algo aqui? Só sobrescreve se for checkout (mais fraco)
+      if (ocup[r.chale][d] && ocup[r.chale][d].tipo !== 'checkout') continue;
 
-      // Dia ocupado — determinar tipo
-      const tipo = (checkinNoMes && d === dtE.getDate())
-        ? 'checkin'
-        : (d === primeiroDiaNoMes && !checkinNoMes)
-          ? 'checkin_cont' // entrou antes do mês, primeiro dia visível
-          : 'ocupado';
+      // É o primeiro dia ocupado desta reserva neste mês?
+      const diaAnterior = d > 1 ? new Date(ano, mes, d-1, 12) : null;
+      const anteriorOcupado = diaAnterior && diaAnterior >= dtE && diaAnterior < dtS;
+      const isCheckin = !anteriorOcupado; // primeiro dia da reserva visível no mês
 
-      // Não sobrescrever checkin com ocupado
-      if (!ocup[r.chale][d] || ocup[r.chale][d].tipo === 'checkout') {
-        ocup[r.chale][d] = { tipo, canal: r.canal, rb: r.rb,
-          entrada: r.entrada, saida: r.saida, diarias: r.diarias };
+      ocup[r.chale][d] = {
+        tipo: isCheckin ? 'checkin' : 'ocupado',
+        canal: r.canal, rb: r.rb,
+        entrada: r.entrada, saida: r.saida,
+      };
+    }
+
+    // Marcar dia de checkout (se cair neste mês)
+    if (dtS.getFullYear() === ano && dtS.getMonth() === mes) {
+      const dSaida = dtS.getDate();
+      if (!ocup[r.chale][dSaida]) {
+        ocup[r.chale][dSaida] = { tipo: 'checkout', canal: r.canal };
       }
     }
   });
@@ -2622,33 +2615,27 @@ function renderCalendarioMensal(ano, mes) {
       const info = ocup[chale][d];
       const dow  = new Date(ano, mes, d).getDay();
       const fds  = dow === 0 || dow === 6;
-      let bg, brd, tip = '', ico = '';
+      let bg, brd, ico = '', tip = '';
 
-      if (!info) {
-        // Livre
+      if (!info || info.tipo === 'checkout') {
         bg  = fds ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.02)';
-        brd = '1px solid rgba(255,255,255,.06)';
-      } else if (info.tipo === 'checkout') {
-        // Dia de saída — chalé vazio, só triângulo discreto
-        bg  = fds ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.02)';
-        brd = '1px solid rgba(255,255,255,.06)';
-        ico = `<span style="font-size:7px;opacity:.35;color:var(--muted)">◀</span>`;
-        tip = `◀ Check-out · ${chale}`;
+        brd = '1px solid rgba(255,255,255,.07)';
+        if (info?.tipo === 'checkout') {
+          ico = `<span style="font-size:8px;color:rgba(255,255,255,.3)">◀</span>`;
+          tip = `Check-out · ${chale}`;
+        }
       } else {
-        // Ocupado (checkin, checkin_cont ou ocupado) — mesma cor de fundo pelo canal
-        const c = COR_CANAL[info.canal] || '#34C77B';
-        bg  = c + '66';
-        brd = `1px solid ${c}99`;
-        tip = `${chale} · ${info.canal||''} · entrada ${info.entrada||''}`;
+        // Ocupado ou checkin — mesma cor de fundo pelo canal
+        const cor = COR_CANAL[info.canal] || '#34C77B';
+        bg  = cor + '70';
+        brd = `1px solid ${cor}AA`;
+        tip = `${info.tipo === 'checkin' ? '▶ Check-in' : 'Ocupado'} · ${chale} · ${info.canal||''}${info.rb ? ' · R$'+Math.round(info.rb) : ''}`;
         if (info.tipo === 'checkin') {
-          ico = `<span style="font-size:8px;color:#fff;opacity:.9">▶</span>`;
-          tip = `▶ Check-in · ${chale} · ${info.canal||''} · ${info.rb ? 'R$'+Math.round(info.rb) : ''}`;
-        } else if (info.tipo === 'checkin_cont') {
-          ico = `<span style="font-size:7px;color:#fff;opacity:.5">▶</span>`;
+          ico = `<span style="font-size:9px;color:#fff;font-weight:700;line-height:1">▶</span>`;
         }
       }
 
-      html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;color:#fff;">${ico}</div>`;
+      html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;">${ico}</div>`;
     }
   });
 
