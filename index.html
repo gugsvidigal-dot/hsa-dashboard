@@ -2502,20 +2502,28 @@ function renderCalendarioMensal(ano, mes) {
   // ── Dias do mês — declarado ANTES de qualquer uso ──
   const diasNoMes = new Date(ano, mes + 1, 0).getDate();
 
-  // ── Debug sempre visível ──
-  const dbg = window._calDebug || {};
+  // ── Filtrar reservas que tocam este mês ──
   const todasReservas = window._reservasCalendario || [];
-  const amostra = todasReservas.find(r => r.ano === ano && r.mes === mes);
-  grid.innerHTML = `<div style="padding:12px;background:rgba(91,141,239,.08);border:1px solid rgba(91,141,239,.2);border-radius:8px;font-size:11px;font-family:monospace;color:var(--text);margin-bottom:10px;">
-    <strong>DEBUG CALENDÁRIO</strong><br>
-    Total _reservasCalendario: <b>${todasReservas.length}</b><br>
-    entradaKey detectada: <b>"${dbg.entradaKey||'NÃO ENCONTRADA'}"</b><br>
-    saidaKey detectada: <b>"${dbg.saidaKey||'NÃO ENCONTRADA'}"</b><br>
-    Reservas deste mês (${ML_NOME[mes]}/${ano}): <b>${todasReservas.filter(r=>r.ano===ano&&r.mes===mes).length}</b><br>
-    Amostra 1ª reserva do mês: <b>${amostra ? JSON.stringify({entrada:amostra.entrada,saida:amostra.saida,chale:amostra.chale,isFallback:amostra.isFallback}) : 'nenhuma'}</b><br>
-    <br>Colunas Vendas_BD: ${(dbg.allKeys||[]).map(k=>`<span style="background:var(--surf2);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block;">${k.replace(/\n/g,'↵')}</span>`).join(' ')}
-  </div>`;
-  return; // TEMPORÁRIO — remove após diagnóstico
+  const mesIni = new Date(ano, mes, 1);
+  const mesFim = new Date(ano, mes + 1, 0, 23, 59, 59);
+  const reservas = todasReservas.filter(r => {
+    if (r.isFallback) return false; // ignorar fallbacks — só datas reais
+    const dtE = new Date(r.entrada + 'T12:00:00');
+    const dtS = new Date(r.saida   + 'T12:00:00');
+    if (isNaN(dtE) || isNaN(dtS)) return false;
+    // Reserva toca o mês se entrada <= último dia do mês E saída >= primeiro dia do mês
+    // Limitar ao máximo 60 dias de duração (evitar dados corrompidos)
+    const duracaoDias = (dtS - dtE) / 86400000;
+    if (duracaoDias <= 0 || duracaoDias > 60) return false;
+    return dtE <= mesFim && dtS >= mesIni;
+  });
+
+  if (todasReservas.length === 0) {
+    grid.innerHTML = `<div style="padding:16px;color:var(--accent2);font-size:12px;background:rgba(240,180,41,.08);border-radius:8px;">
+      ⚠️ <strong>Nenhuma reserva encontrada.</strong> Recarregue o Excel pelo Dropbox e tente novamente.
+    </div>`;
+    return;
+  }
 
 
   // ── Mapear ocupação: ocup[chale][dia] = {tipo, canal, rb} ──
@@ -5385,11 +5393,20 @@ function lerSheet(workbook, sheetName) {
   return XLSX.utils.sheet_to_json(ws, { raw: false, defval: null });
 }
 
+function lerSheetRaw(workbook, sheetName) {
+  const ws = workbook.Sheets[sheetName];
+  if (!ws) throw new Error('Aba ' + sheetName + ' não encontrada');
+  return XLSX.utils.sheet_to_json(ws, { raw: true, defval: null });
+}
+
 function processarVendas(workbook) {
-  const rows = lerSheet(workbook, 'Vendas_BD');
+  const rows    = lerSheet(workbook, 'Vendas_BD');      // raw:false — para todos os campos texto/número
+  const rowsRaw = lerSheetRaw(workbook, 'Vendas_BD');   // raw:true  — para datas seriais corretas
 
   // Filtrar status válidos
-  const valid = rows.filter(r => STATUS_OK.includes(r['Status da Reserva']));
+  const validIdx = rows.reduce((acc, r, i) => { if (STATUS_OK.includes(r['Status da Reserva'])) acc.push(i); return acc; }, []);
+  const valid    = validIdx.map(i => rows[i]);
+  const validRaw = validIdx.map(i => rowsRaw[i]);
 
   
   // Encontrar chaves dinamicamente uma vez
@@ -5434,7 +5451,8 @@ function processarVendas(workbook) {
     });
   });
 
-  valid.forEach(r => {
+  valid.forEach((r, _vi) => {
+    const rRaw = validRaw[_vi]; // linha raw para datas seriais
     const mesAnoRaw = r[mesAnoKey];
     if (!mesAnoRaw) return;
     let dt;
@@ -5479,43 +5497,46 @@ function processarVendas(workbook) {
     vd[ano].reservas[mes] += 1;
 
     // ── Datas de entrada e saída para o calendário ──
-    const parseExcelDate = (raw) => {
-      if (!raw) return null;
-      if (raw instanceof Date) return isNaN(raw) ? null : raw;
+    const parseSerialDate = (raw) => {
+      if (!raw && raw !== 0) return null;
+      // Número serial Excel → JS date
       if (typeof raw === 'number') {
         const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
         d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
         return isNaN(d) ? null : d;
       }
+      if (raw instanceof Date) return isNaN(raw) ? null : raw;
       if (typeof raw === 'string') {
         const s = raw.trim();
+        // dd/mm/yyyy (formato BR)
+        const br = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (br) return new Date(+br[3], +br[2]-1, +br[1], 12);
+        // dd/mm/yy
+        const br2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+        if (br2) return new Date(2000 + +br2[3], +br2[2]-1, +br2[1], 12);
+        // yyyy-mm-dd
         if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s + 'T12:00:00');
-        const dmY = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (dmY) return new Date(+dmY[3], +dmY[2]-1, +dmY[1], 12);
-        const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
-        if (dmy) return new Date(2000 + +dmy[3], +dmy[2]-1, +dmy[1], 12);
-        const d2 = new Date(s);
-        return isNaN(d2) ? null : d2;
+        const d = new Date(s);
+        return isNaN(d) ? null : d;
       }
       return null;
     };
 
-    const entradaRaw = r[entradaKey] || r['Entrada'] || r['Data de Entrada'] || r['Check-in'] || null;
-    const saidaRaw   = r[saidaKey]   || r['Saída']   || r['Saida'] || r['Data de Saída'] || r['Check-out'] || null;
-    const dtEntrada  = parseExcelDate(entradaRaw);
-    const isFallback = !dtEntrada;
-    const dtEnt = dtEntrada || new Date(ano, mes, 1, 12);
-    let   dtSai = parseExcelDate(saidaRaw);
-    if (!dtSai) { dtSai = new Date(dtEnt); dtSai.setDate(dtSai.getDate() + Math.round(di || 1)); }
+    const entradaRaw = rRaw ? rRaw[entradaKey] || rRaw['Entrada'] : null;
+    const saidaRaw   = rRaw ? rRaw[saidaKey]   || rRaw['Saída'] || rRaw['Saida'] : null;
+    const dtEnt = parseSerialDate(entradaRaw);
+    const dtSai = parseSerialDate(saidaRaw) || (dtEnt ? new Date(dtEnt.getTime() + Math.round(di||1)*86400000) : null);
 
-    window._reservasCalendario.push({
-      chale, canal, ano, mes,
-      entrada: dtEnt.toISOString().slice(0, 10),
-      saida:   dtSai.toISOString().slice(0, 10),
-      diarias: Math.round(di || 1), rb, rl,
-      isFallback,
-      status: r['Status da Reserva'] || '',
-    });
+    if (dtEnt && dtSai) {
+      window._reservasCalendario.push({
+        chale, canal, ano, mes,
+        entrada: dtEnt.toISOString().slice(0, 10),
+        saida:   dtSai.toISOString().slice(0, 10),
+        diarias: Math.round(di || 1), rb, rl,
+        isFallback: false,
+        status: r['Status da Reserva'] || '',
+      });
+    }
 
     if (vd[ano].canaisRec[canal] !== undefined) {
       vd[ano].canaisRec[canal]    += rb;
