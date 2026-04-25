@@ -2498,18 +2498,26 @@ function renderCalendarioMensal(ano, mes) {
 
   if (titulo) titulo.textContent = ML[mes] + ' ' + ano;
 
-  // Dias do mês
-  const diasNoMes = new Date(ano, mes+1, 0).getDate();
-  const diasArr = Array.from({length:diasNoMes},(_,i)=>i+1);
-
   // Filtrar reservas do período
-  const reservas = (window._reservasCalendario||[]).filter(r => {
+  const todasReservas = window._reservasCalendario || [];
+  const reservas = todasReservas.filter(r => {
     const dtE = new Date(r.entrada+'T12:00:00');
     const dtS = new Date(r.saida+'T12:00:00');
-    const mesRef = new Date(ano, mes+1, 0); // último dia do mês
+    const mesRef = new Date(ano, mes+1, 0);
     const mesIni = new Date(ano, mes, 1);
-    return r.ano === ano && dtE <= mesRef && dtS >= mesIni;
+    return dtE <= mesRef && dtS >= mesIni;
   });
+
+  // Debug info — será mostrado temporariamente no calendário
+  const debugInfo = `Total reservas carregadas: ${todasReservas.length} | Neste mês: ${reservas.length} | Colunas detectadas: entrada="${window._calDebug?.entradaKey||'NÃO ENCONTRADA'}" saída="${window._calDebug?.saidaKey||'NÃO ENCONTRADA'}"`;
+  console.log('[HSA Cal]', debugInfo);
+  if (todasReservas.length === 0) {
+    grid.innerHTML = `<div style="padding:20px;color:var(--accent2);font-size:12px;background:rgba(240,180,41,.08);border-radius:8px;">
+      ⚠️ <strong>Sem dados de calendário</strong> — a coluna de data de entrada não foi encontrada no Excel.<br>
+      <span style="color:var(--muted);margin-top:6px;display:block;">Abra o console (F12) e procure por <code>[HSA Cal] Colunas Vendas_BD</code> para ver o nome exato da coluna no seu Excel.</span>
+    </div>`;
+    return;
+  }
 
   // Mapear quais chalés estão ocupados em cada dia, e se é check-in/out
   // ocupacao[chale][dia] = { tipo: 'ocupado'|'checkin'|'checkout'|'livre', canal, hospede? }
@@ -5415,6 +5423,21 @@ function processarVendas(workbook) {
   const mesAnoKey = allKeys.find(k => k.includes('Mês') || k.includes('Mes')) || 'Mês/Ano';
   // Coluna Valor Total da Reserva (sem extras) para calcular extras = RecBruta - ValorRes
   const vresKey = allKeys.find(k => k.replace(/[\r\n]/g,'').trim() === 'Valor Total da Reserva') || '';
+  // Coluna de data de entrada — busca ampla
+  const kNorm = k => k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\r\n\s\-_\.]/g,'');
+  const entradaKey = allKeys.find(k => {
+    const n = kNorm(k);
+    return n.includes('dataentrada') || n.includes('entrada') || n.includes('checkin') || n==='dtentr' || n.includes('dtentrada');
+  }) || '';
+  const saidaKey = allKeys.find(k => {
+    const n = kNorm(k);
+    return n.includes('datasaida') || n.includes('saida') || n.includes('checkout') || n==='dtsaida' || n.includes('dtsaida');
+  }) || '';
+  const diariasKey = allKeys.find(k => { const n=kNorm(k); return n.includes('diaria')||n.includes('ndediarias')||n==='diarias'; }) || '# Diárias';
+  // Debug: logar nomes das colunas para diagnóstico
+  console.log('[HSA Cal] Colunas Vendas_BD:', allKeys);
+  console.log('[HSA Cal] entradaKey:', entradaKey, '| saidaKey:', saidaKey, '| diariasKey:', diariasKey, '| mesAnoKey:', mesAnoKey);
+  window._calDebug = { allKeys, entradaKey, saidaKey, diariasKey, mesAnoKey };
 
   // Inicializar estrutura por ano
   const anos = [2025, 2026];
@@ -5480,23 +5503,55 @@ function processarVendas(workbook) {
     vd[ano].reservas[mes] += 1;
 
     // Guardar reserva raw para o calendário
-    const entradaRaw = r['Data de Entrada'] || r['Entrada'] || r['Check-in'] || r['CheckIn'] || r[Object.keys(r).find(k=>k.toLowerCase().includes('entrada')||k.toLowerCase().includes('check-in')||k.toLowerCase().includes('checkin'))||''];
-    if (entradaRaw) {
-      let dtEntrada;
-      if (entradaRaw instanceof Date) dtEntrada = entradaRaw;
-      else if (typeof entradaRaw === 'number') { dtEntrada = new Date(Math.round((entradaRaw-25569)*86400*1000)); dtEntrada.setMinutes(dtEntrada.getMinutes()+dtEntrada.getTimezoneOffset()); }
-      else if (typeof entradaRaw === 'string') { dtEntrada = new Date(entradaRaw+'T12:00:00'); }
-      if (dtEntrada && !isNaN(dtEntrada)) {
-        const dtSaida = new Date(dtEntrada); dtSaida.setDate(dtSaida.getDate() + Math.round(di||1));
-        if (!window._reservasCalendario) window._reservasCalendario = [];
-        window._reservasCalendario.push({
-          chale, canal, ano, mes,
-          entrada: dtEntrada.toISOString().slice(0,10),
-          saida:   dtSaida.toISOString().slice(0,10),
-          diarias: Math.round(di||1), rb, rl,
-          status: r['Status da Reserva'] || '',
-        });
+    const parseExcelDate = (raw) => {
+      if (!raw) return null;
+      if (raw instanceof Date) return isNaN(raw) ? null : raw;
+      if (typeof raw === 'number') {
+        const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
+        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+        return isNaN(d) ? null : d;
       }
+      if (typeof raw === 'string') {
+        // Formatos: "2025-01-15", "15/01/2025", "Jan-25", "15-Jan-2025"
+        const s = raw.trim();
+        // ISO
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s + 'T12:00:00');
+        // dd/mm/yyyy
+        const dmY = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (dmY) return new Date(+dmY[3], +dmY[2]-1, +dmY[1], 12);
+        // dd/mm/yy
+        const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+        if (dmy) return new Date(2000 + +dmy[3], +dmy[2]-1, +dmy[1], 12);
+        // dd-mm-yyyy or dd-mm-yy
+        const ddmy = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+        if (ddmy) { const y = +ddmy[3] < 100 ? 2000 + +ddmy[3] : +ddmy[3]; return new Date(y, +ddmy[2]-1, +ddmy[1], 12); }
+        // Jan-25 or Jan-2025
+        const mMeses = {jan:0,fev:1,feb:1,mar:2,abr:3,apr:3,mai:4,may:4,jun:5,jul:6,ago:7,aug:7,set:8,sep:8,out:9,oct:9,nov:10,dez:11,dec:11};
+        const mAbr = s.match(/^([a-zA-Z]{3})[-\/](\d{2,4})$/i);
+        if (mAbr) { const mn = mMeses[mAbr[1].toLowerCase()]; let y = +mAbr[2]; if(y<100)y+=2000; if(mn!==undefined)return new Date(y,mn,1,12); }
+        // Tenta construção genérica
+        const d = new Date(s);
+        return isNaN(d) ? null : d;
+      }
+      return null;
+    };
+
+    const entradaRaw = entradaKey ? r[entradaKey] : (r['Data de Entrada'] || r['Entrada'] || r['Check-in'] || r['CheckIn']);
+    const saidaRaw   = saidaKey   ? r[saidaKey]   : (r['Data de Saída']  || r['Saída']   || r['Check-out'] || r['CheckOut'] || r['Saida']);
+
+    const dtEntrada = parseExcelDate(entradaRaw);
+    if (dtEntrada) {
+      let dtSaida = parseExcelDate(saidaRaw);
+      // Se não tiver data de saída, calcula pela quantidade de diárias
+      if (!dtSaida) { dtSaida = new Date(dtEntrada); dtSaida.setDate(dtSaida.getDate() + Math.round(di || 1)); }
+      if (!window._reservasCalendario) window._reservasCalendario = [];
+      window._reservasCalendario.push({
+        chale, canal, ano, mes,
+        entrada: dtEntrada.toISOString().slice(0, 10),
+        saida:   dtSaida.toISOString().slice(0, 10),
+        diarias: Math.round(di || 1), rb, rl,
+        status: r['Status da Reserva'] || '',
+      });
     }
 
     if (vd[ano].canaisRec[canal] !== undefined) {
