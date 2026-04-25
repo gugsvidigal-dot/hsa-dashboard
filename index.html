@@ -2833,29 +2833,7 @@ function renderVendasMensal() {
 
   wrap.innerHTML=`
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px">
-    <canvas id="cal-icon-canvas" width="48" height="48" style="flex-shrink:0;"></canvas>
-    <script>
-    (function(){
-      const c = document.getElementById('cal-icon-canvas');
-      if(!c) return;
-      const ctx = c.getContext('2d');
-      const ms = '${MS[m].toUpperCase()}';
-      // Corpo
-      ctx.fillStyle='#1E2330'; ctx.strokeStyle='#E07B47'; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.roundRect(4,8,40,36,5); ctx.fill(); ctx.stroke();
-      // Topo
-      ctx.fillStyle='#E07B47';
-      ctx.beginPath(); ctx.roundRect(4,8,40,13,5); ctx.fill();
-      ctx.fillRect(4,15,40,6);
-      // Argolas
-      ctx.beginPath(); ctx.roundRect(15,4,3,8,1.5); ctx.fill();
-      ctx.beginPath(); ctx.roundRect(30,4,3,8,1.5); ctx.fill();
-      // Texto
-      ctx.fillStyle='#E07B47'; ctx.font='bold 11px Inter,sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(ms, 24, 33);
-    })();
-    </script>
+    <img src="data:image/svg+xml,${encodeURIComponent(`<svg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'><rect x='4' y='8' width='40' height='36' rx='5' fill='%231E2330' stroke='%23E07B47' stroke-width='1.5'/><rect x='4' y='8' width='40' height='13' rx='5' fill='%23E07B47'/><rect x='4' y='15' width='40' height='6' fill='%23E07B47'/><rect x='15' y='4' width='3' height='8' rx='1.5' fill='%23E07B47'/><rect x='30' y='4' width='3' height='8' rx='1.5' fill='%23E07B47'/><text x='24' y='34' text-anchor='middle' font-family='Arial,sans-serif' font-size='12' font-weight='bold' fill='%23E07B47'>${MS[m].toUpperCase()}</text></svg>`)}" width="48" height="48" style="flex-shrink:0;">
     <div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:22px">${ML[m]} 2026 vs ${ML[m]} 2025</div>
       <div style="font-size:12px;color:var(--muted)">${sem?'Sem reservas registradas neste mês':'Comparativo mensal · dados reais'}</div>
