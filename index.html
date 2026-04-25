@@ -375,6 +375,97 @@ html { overflow-x: hidden; }
 .view-filter-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
 
 /* Footer base */
+/* ── CALENDÁRIO DE OCUPAÇÃO ── */
+.cal-wrap { margin-top: 14px; }
+.cal-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(6, 1fr);
+  gap: 2px;
+  font-size: 11px;
+}
+.cal-header-cell {
+  text-align: center;
+  padding: 6px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent2);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: var(--surf2);
+  border-radius: 6px;
+}
+.cal-day-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 3px 8px 3px 0;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  min-height: 28px;
+}
+.cal-day-label.weekend { color: var(--accent2); }
+.cal-cell {
+  border-radius: 4px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: default;
+  position: relative;
+  transition: transform .15s;
+}
+.cal-cell.ocupado {
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+.cal-cell.ocupado:hover { transform: scale(1.08); z-index: 2; }
+.cal-cell.disponivel { background: rgba(52,199,123,.12); color: var(--green); }
+.cal-cell.fora-mes { background: transparent; }
+.cal-cell.hoje { box-shadow: 0 0 0 2px var(--accent2); }
+.cal-legenda {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.cal-leg-item { display: flex; align-items: center; gap: 5px; }
+.cal-leg-dot {
+  width: 10px; height: 10px; border-radius: 3px;
+}
+.cal-tooltip {
+  position: fixed;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  z-index: 500;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  max-width: 200px;
+  display: none;
+}
+.cal-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px,1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cal-resumo-item {
+  background: var(--surf2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.cal-resumo-item .cr-label { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+.cal-resumo-item .cr-val { font-weight: 700; font-size: 14px; }
+
 footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
   padding:16px 40px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);}
 </style>
@@ -708,6 +799,23 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 
   <!-- Container visão mensal -->
   <div id="v-mensal-wrap" class="hidden"></div>
+
+  <!-- Calendário de ocupação (visão mensal) -->
+  <div id="v-cal-wrap" class="hidden" style="margin-bottom:20px;">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);">Calendário de Ocupação · <span id="cal-titulo" style="color:var(--text);text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+            <div style="width:12px;height:12px;border-radius:3px;background:var(--green);opacity:.8;"></div>Ocupado
+            <div style="width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.06);border:1px solid var(--border);margin-left:6px;"></div>Livre
+            <div style="width:12px;height:12px;border-radius:3px;background:rgba(240,180,41,.5);margin-left:6px;"></div>Check-in/out
+          </div>
+        </div>
+      </div>
+      <div id="cal-grid" style="padding:16px 20px 20px;overflow-x:auto;"></div>
+    </div>
+  </div>
 
   <!-- KPIs dinâmicos -->
   <div id="v-kpis">
@@ -2373,6 +2481,249 @@ function setVendasMes(mes, btn) {
     btn.style.fontWeight = '700';
   }
   renderVendasMensal();
+  renderCalendarioMensal(2026, mes);
+}
+
+// ════════ CALENDÁRIO DE OCUPAÇÃO ════════
+function renderCalendarioMensal(ano, mes) {
+  const wrap = document.getElementById('v-cal-wrap');
+  const grid = document.getElementById('cal-grid');
+  const titulo = document.getElementById('cal-titulo');
+  if (!wrap || !grid) return;
+  wrap.classList.remove('hidden');
+
+  const ML = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const CHALÉS = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const COR_CANAL = { Booking:'#E07B47', Direto:'#34C77B', Agência:'#5B8DEF', Expedia:'#A78BFA' };
+
+  if (titulo) titulo.textContent = ML[mes] + ' ' + ano;
+
+  // Dias do mês
+  const diasNoMes = new Date(ano, mes+1, 0).getDate();
+  const diasArr = Array.from({length:diasNoMes},(_,i)=>i+1);
+
+  // Filtrar reservas do período
+  const reservas = (window._reservasCalendario||[]).filter(r => {
+    const dtE = new Date(r.entrada+'T12:00:00');
+    const dtS = new Date(r.saida+'T12:00:00');
+    const mesRef = new Date(ano, mes+1, 0); // último dia do mês
+    const mesIni = new Date(ano, mes, 1);
+    return r.ano === ano && dtE <= mesRef && dtS >= mesIni;
+  });
+
+  // Mapear quais chalés estão ocupados em cada dia, e se é check-in/out
+  // ocupacao[chale][dia] = { tipo: 'ocupado'|'checkin'|'checkout'|'livre', canal, hospede? }
+  const ocup = {};
+  CHALÉS.forEach(c => { ocup[c] = {}; });
+
+  reservas.forEach(r => {
+    const dtE = new Date(r.entrada+'T12:00:00');
+    const dtS = new Date(r.saida+'T12:00:00');
+    for (let d = 1; d <= diasNoMes; d++) {
+      const dtD = new Date(ano, mes, d);
+      const isCheckin  = dtE.getFullYear()===ano && dtE.getMonth()===mes && dtE.getDate()===d;
+      const isCheckout = dtS.getFullYear()===ano && dtS.getMonth()===mes && dtS.getDate()===d;
+      const ocupado = dtD >= dtE && dtD < dtS; // noite: inclui entrada, exclui saída
+      if (CHALÉS.includes(r.chale)) {
+        if (isCheckin && isCheckout) {
+          ocup[r.chale][d] = {tipo:'checkin', canal:r.canal, rb:r.rb};
+        } else if (isCheckin) {
+          ocup[r.chale][d] = {tipo:'checkin', canal:r.canal, rb:r.rb};
+        } else if (isCheckout) {
+          // Checkout = dia livre (hóspede saiu)
+          ocup[r.chale][d] = ocup[r.chale][d] || {tipo:'checkout', canal:r.canal};
+        } else if (ocupado) {
+          ocup[r.chale][d] = {tipo:'ocupado', canal:r.canal, rb:r.rb};
+        }
+      }
+    }
+  });
+
+  // Dia da semana de início (0=Dom)
+  const diasSemana = ['D','S','T','Q','Q','S','S'];
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+
+  // Calcular taxa de ocupação do mês
+  let totalCells = diasNoMes * CHALÉS.length;
+  let ocupCells  = 0;
+  CHALÉS.forEach(c => { for(let d=1;d<=diasNoMes;d++) if(ocup[c][d]?.tipo==='ocupado'||ocup[c][d]?.tipo==='checkin') ocupCells++; });
+  const txOcup = totalCells > 0 ? (ocupCells/totalCells*100).toFixed(1) : '0.0';
+
+  // Nomes curtos dos dias com offset
+  const headerDias = [];
+  for (let d = 1; d <= diasNoMes; d++) {
+    const dow = new Date(ano, mes, d).getDay();
+    headerDias.push({d, dow});
+  }
+
+  // Montar CSS grid inline
+  const COL = diasNoMes + 1; // +1 para label do chalé
+  const minW = Math.max(600, COL * 36);
+
+  let html = `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Taxa de ocupação do mês: <strong style="color:var(--text)">${txOcup}%</strong> · ${ocupCells} noites ocupadas de ${totalCells} possíveis</div>`;
+  html += `<div style="display:grid;grid-template-columns:90px repeat(${diasNoMes},1fr);gap:2px;min-width:${minW}px;">`;
+
+  // Header: chalé label vazio + dias
+  html += `<div style="font-size:9px;color:var(--muted);display:flex;align-items:flex-end;padding-bottom:4px;">Chalé</div>`;
+  headerDias.forEach(({d,dow})=>{
+    const fds = dow===0||dow===6;
+    html += `<div style="text-align:center;padding-bottom:4px;">
+      <div style="font-size:8px;color:${fds?'var(--accent2)':'var(--muted)'};line-height:1;">${diasSemana[dow]}</div>
+      <div style="font-size:10px;font-weight:${fds?'700':'400'};color:${fds?'var(--accent2)':'var(--muted)'};">${d}</div>
+    </div>`;
+  });
+
+  // Linhas por chalé
+  CHALÉS.forEach(chale => {
+    // Nome do chalé
+    html += `<div style="font-size:11px;color:var(--text);font-weight:500;display:flex;align-items:center;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chale}</div>`;
+
+    for (let d = 1; d <= diasNoMes; d++) {
+      const info = ocup[chale][d];
+      const dow  = new Date(ano, mes, d).getDay();
+      const fds  = dow===0||dow===6;
+      let bg, border, cursor, tooltip='';
+
+      if (!info) {
+        bg = fds ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.025)';
+        border = '1px solid rgba(255,255,255,.05)';
+        cursor = 'default';
+      } else if (info.tipo==='checkin') {
+        const cor = COR_CANAL[info.canal]||'#34C77B';
+        bg = cor+'99';
+        border = '2px solid '+cor;
+        cursor = 'pointer';
+        tooltip = `Check-in ${chale} · ${info.canal||''} · ${info.rb?'R$ '+Math.round(info.rb):''}`;
+      } else if (info.tipo==='checkout') {
+        bg = 'rgba(240,180,41,.2)';
+        border = '1px dashed rgba(240,180,41,.4)';
+        cursor = 'default';
+        tooltip = `Check-out ${chale}`;
+      } else {
+        const cor = COR_CANAL[info.canal]||'#34C77B';
+        bg = cor+'55';
+        border = '1px solid '+cor+'88';
+        cursor = 'pointer';
+        tooltip = `Ocupado · ${chale} · ${info.canal||''}`;
+      }
+
+      const icone = info?.tipo==='checkin' ? '▶' : info?.tipo==='checkout' ? '◀' : '';
+      html += `<div title="${tooltip}" style="height:28px;border-radius:4px;background:${bg};border:${border};cursor:${cursor};display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(255,255,255,.7);">${icone}</div>`;
+    }
+  });
+
+  html += '</div>';
+
+  // Legenda de canais
+  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">`;
+  Object.entries(COR_CANAL).forEach(([canal,cor])=>{
+    html += `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
+      <div style="width:10px;height:10px;border-radius:2px;background:${cor};opacity:.8;"></div>${canal}
+    </div>`;
+  });
+  html += '</div>';
+
+  grid.innerHTML = html;
+}
+
+function buildCalendario(ano, mes) {
+  const CHALÉS_LIST = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const CORES_CHALE = {
+    Everest:  '#E07B47', Monviso:  '#5B8DEF', Martigny: '#34C77B',
+    Charmey:  '#F0B429', Cheverny: '#A78BFA', Monblanc: '#F05252',
+  };
+  const reservas = (window._reservasCalendario || []).filter(r => {
+    const dtE = new Date(r.entrada+'T12:00:00');
+    const dtS = new Date(r.saida  +'T12:00:00');
+    const primeiroDia = new Date(ano, mes, 1);
+    const ultimoDia  = new Date(ano, mes+1, 0);
+    return dtE <= ultimoDia && dtS > primeiroDia;
+  });
+
+  // Construir mapa dia→[{chale, rb, canal, diarias}]
+  const ocupMap = {};
+  reservas.forEach(r => {
+    let d = new Date(r.entrada+'T12:00:00');
+    const fim = new Date(r.saida+'T12:00:00');
+    while (d < fim) {
+      if (d.getFullYear() === ano && d.getMonth() === mes) {
+        const key = d.getDate();
+        if (!ocupMap[key]) ocupMap[key] = {};
+        ocupMap[key][r.chale] = { rb: r.rb, canal: r.canal, diarias: r.diarias, entrada: r.entrada, saida: r.saida };
+      }
+      d.setDate(d.getDate()+1);
+    }
+  });
+
+  const diasNoMes = new Date(ano, mes+1, 0).getDate();
+  const primeiroDiaSemana = new Date(ano, mes, 1).getDay(); // 0=Dom
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  // Linha de cabeçalho
+  let html = `<div class="cal-wrap">
+  <div id="cal-tooltip" class="cal-tooltip"></div>
+  <div class="cal-grid">
+    <div class="cal-header-cell" style="background:transparent;"></div>`;
+  CHALÉS_LIST.forEach(c => {
+    html += `<div class="cal-header-cell" style="background:${CORES_CHALE[c]}22;color:${CORES_CHALE[c]}">${c}</div>`;
+  });
+  html += '</div>'; // fim header row
+
+  // Dias do mês
+  const SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const dataAtual = new Date(ano, mes, dia);
+    const diaSemana = dataAtual.getDay();
+    const isWeekend = diaSemana === 0 || diaSemana === 6;
+    const isHoje = dataAtual.getTime() === hoje.getTime();
+    html += `<div class="cal-grid" style="margin-top:2px">
+      <div class="cal-day-label${isWeekend?' weekend':''}">${dia} <span style="font-size:9px;margin-left:3px;opacity:.6">${SEMANA[diaSemana]}</span></div>`;
+    CHALÉS_LIST.forEach(c => {
+      const ocup = ocupMap[dia] && ocupMap[dia][c];
+      if (ocup) {
+        const initials = c.slice(0,3).toUpperCase();
+        html += `<div class="cal-cell ocupado${isHoje?' hoje':''}"
+          style="background:${CORES_CHALE[c]};color:#fff"
+          onmouseenter="showCalTip(event,'${c}','${ocup.entrada}','${ocup.saida}',${ocup.rb},${ocup.diarias},'${ocup.canal}')"
+          onmouseleave="hideCalTip()"
+          onclick="showCalTip(event,'${c}','${ocup.entrada}','${ocup.saida}',${ocup.rb},${ocup.diarias},'${ocup.canal}')">
+          ${initials}
+        </div>`;
+      } else {
+        html += `<div class="cal-cell disponivel${isHoje?' hoje':''}"></div>`;
+      }
+    });
+    html += '</div>';
+  }
+
+  // Legenda
+  html += `<div class="cal-legenda">`;
+  CHALÉS_LIST.forEach(c => {
+    html += `<div class="cal-leg-item"><div class="cal-leg-dot" style="background:${CORES_CHALE[c]}"></div><span style="color:var(--text)">${c}</span></div>`;
+  });
+  html += `<div class="cal-leg-item"><div class="cal-leg-dot" style="background:rgba(52,199,123,.3)"></div><span style="color:var(--muted)">Disponível</span></div>`;
+  html += `</div></div>`; // fim cal-legenda + cal-wrap
+
+  return html;
+}
+
+function showCalTip(e, chale, entrada, saida, rb, diarias, canal) {
+  const tip = document.getElementById('cal-tooltip');
+  if (!tip) return;
+  const dtE = new Date(entrada+'T12:00:00').toLocaleDateString('pt-BR');
+  const dtS = new Date(saida  +'T12:00:00').toLocaleDateString('pt-BR');
+  tip.innerHTML = `<strong style="color:var(--accent2)">${chale}</strong><br>
+    📅 ${dtE} → ${dtS}<br>
+    🌙 ${diarias} diária${diarias!==1?'s':''}<br>
+    📡 ${canal}<br>
+    💰 R$ ${rb.toLocaleString('pt-BR')}`;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(e.clientX+12, window.innerWidth-210)+'px';
+  tip.style.top  = (e.clientY-60)+'px';
+}
+function hideCalTip() {
+  const tip = document.getElementById('cal-tooltip');
+  if (tip) tip.style.display = 'none';
 }
 
 function renderVendasMensal() {
@@ -2488,6 +2839,8 @@ function renderVendas(){
   if(compRow)   compRow.classList.toggle('hidden', !isComp);
   if(mensalBar)  mensalBar.classList.toggle('hidden', !isMensal);
   if(mensalWrap) mensalWrap.classList.toggle('hidden', !isMensal);
+  const calWrap = document.getElementById('v-cal-wrap');
+  if(calWrap) calWrap.classList.toggle('hidden', !isMensal);
 
   // Popular botões de mês com opacidade baseada em dados
   if (isMensal) {
@@ -2511,11 +2864,10 @@ function renderVendas(){
     return;
   }
 
-  if (isComp) return;
-
-  if(isComp){
+  if (isComp) {
     renderVendasComp();
-    document.getElementById('v-insights').innerHTML = `
+    const vi = document.getElementById('v-insights');
+    if (vi) vi.innerHTML = `
       <div class="insight"><div class="ins-icon good">✅</div><div class="ins-body"><h4>Receita Jan–Mar +40% em 2026</h4><p>R$ 81,7k em Jan–Mar/26 vs R$ 58,3k em 2025. Crescimento expressivo com mais diárias (95 vs 57) e mais reservas (44 vs 23).</p></div></div>
       <div class="insight"><div class="ins-icon warn">⚠️</div><div class="ins-body"><h4>Ticket médio caiu 15,9%</h4><p>R$ 860/diária em Jan–Mar/26 vs R$ 1.023 em 2025. Volume maior com tarifa menor — oportunidade de reequilíbrio de preços.</p></div></div>
       <div class="insight"><div class="ins-icon good">✅</div><div class="ins-body"><h4>Canal direto saltou de 8,4% → 41,2%</h4><p>Crescimento expressivo do direto em 2026. Menos comissões pagas à OTA, maior margem líquida retida.</p></div></div>
@@ -2777,25 +3129,31 @@ function renderVendas(){
 }
 
 function renderVendasComp(){
-  const mesesComp = ['Jan','Fev','Mar'];
-  const C25 = 'rgba(91,141,239,.75)';   // azul — 2025
-  const C26 = 'rgba(52,199,123,.75)';   // verde — 2026
-  // Jan-Mar 2025
-  const b25 = VDATA[2025].recBruta.slice(0,3);
-  const l25 = VDATA[2025].recLiq.slice(0,3);
-  const o25 = VDATA[2025].ocup.slice(0,3);
-  const t25 = VDATA[2025].ticket.slice(0,3);
-  const d25 = VDATA[2025].diarias.slice(0,3);
-  // Jan-Mar 2026
-  const b26 = VDATA[2026].recBruta.slice(0,3);
-  const l26 = VDATA[2026].recLiq.slice(0,3);
-  const o26 = VDATA[2026].ocup.slice(0,3);
-  const t26 = VDATA[2026].ticket.slice(0,3);
-  const d26 = VDATA[2026].diarias.slice(0,3);
+  if (!VDATA[2025] || !VDATA[2026]) return;
 
-  const barDs = (label25, data25, label26, data26) => [
-    {label:label25, data:data25, backgroundColor:C25, borderColor:C25.replace('.75','1'), borderRadius:[4,4,0,0], borderSkipped:false},
-    {label:label26, data:data26, backgroundColor:C26, borderColor:C26.replace('.75','1'), borderRadius:[4,4,0,0], borderSkipped:false},
+  // Determinar quantos meses de 2026 têm dados
+  const ultMes26 = VDATA[2026].recBruta.reduce((last,v,i)=>v>0?i:last,-1);
+  const nMeses   = Math.max(3, ultMes26+1); // mínimo 3 (Jan–Mar)
+  const ML_ALL   = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mesesComp = ML_ALL.slice(0, nMeses);
+
+  const C25 = 'rgba(91,141,239,.75)';
+  const C26 = 'rgba(52,199,123,.75)';
+
+  const b25 = VDATA[2025].recBruta.slice(0, nMeses);
+  const l25 = VDATA[2025].recLiq.slice(0, nMeses);
+  const o25 = VDATA[2025].ocup.slice(0, nMeses);
+  const t25 = VDATA[2025].ticket.slice(0, nMeses);
+  const d25 = VDATA[2025].diarias.slice(0, nMeses);
+  const b26 = VDATA[2026].recBruta.slice(0, nMeses);
+  const l26 = VDATA[2026].recLiq.slice(0, nMeses);
+  const o26 = VDATA[2026].ocup.slice(0, nMeses);
+  const t26 = VDATA[2026].ticket.slice(0, nMeses);
+  const d26 = VDATA[2026].diarias.slice(0, nMeses);
+
+  const barDs = (lbl25, data25, lbl26, data26) => [
+    {label:lbl25, data:data25, backgroundColor:C25, borderRadius:4, borderSkipped:false},
+    {label:lbl26, data:data26, backgroundColor:C26, borderRadius:4, borderSkipped:false},
   ];
   const lineDs = (data25, data26) => [
     {label:'2025', data:data25, borderColor:'#5B8DEF', backgroundColor:'rgba(91,141,239,.1)',
@@ -2804,25 +3162,76 @@ function renderVendasComp(){
      borderWidth:2, pointRadius:5, pointBackgroundColor:'#34C77B', tension:.3, fill:false},
   ];
 
-  mk('cv_comp_bar',{type:'bar',data:{labels:mesesComp,datasets:barDs('2025 Bruto',b25,'2026 Bruto',b26)},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#9CA3AF',boxWidth:10}},tooltip:{callbacks:{label:c=>fK(c.raw)}}},
-      scales:{x:{grid:NL},y:{grid:GR,ticks:{callback:v=>fK(v)}}}}});
+  // Recalcular totais acumulados dinamicamente
+  const sum = arr => arr.reduce((s,v)=>s+(v||0),0);
+  const pct = (a,b) => a>0 ? ((b-a)/a*100).toFixed(1)+'%' : (b>0?'+∞%':'—');
+  const fmtK = v => v>=1000?'R$ '+(v/1000).toFixed(1)+'k':'R$ '+Math.round(v);
+  const sRb25=sum(b25),sRl25=sum(l25),sDi25=sum(d25),sRe25=sum(VDATA[2025].reservas.slice(0,nMeses));
+  const sRb26=sum(b26),sRl26=sum(l26),sDi26=sum(d26),sRe26=sum(VDATA[2026].reservas.slice(0,nMeses));
+  const tk25 = sDi25>0?Math.round(sRb25/sDi25):0, tk26=sDi26>0?Math.round(sRb26/sDi26):0;
+  const mg25 = sRb25>0?(sRl25/sRb25*100).toFixed(1):0, mg26=sRb26>0?(sRl26/sRb26*100).toFixed(1):0;
+  const cnD25 = sum(VDATA[2025].canaisEvolMes?.Direto?.slice(0,nMeses)||[]);
+  const cnD26 = sum(VDATA[2026].canaisEvolMes?.Direto?.slice(0,nMeses)||[]);
+  const pcD25 = sRb25>0?(cnD25/sRb25*100).toFixed(1):0;
+  const pcD26 = sRb26>0?(cnD26/sRb26*100).toFixed(1):0;
+  const periodo = mesesComp[0]+'–'+mesesComp[mesesComp.length-1];
 
-  mk('cv_comp_diarias',{type:'bar',data:{labels:mesesComp,datasets:barDs('2025',d25,'2026',d26)},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#9CA3AF',boxWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+' d'}}},
-      scales:{x:{grid:NL},y:{grid:GR,ticks:{callback:v=>v+' d'}}}}});
+  // Atualizar tabela comparativa dinamicamente
+  const tbl = document.querySelector('#v-comp-row table.ctbl');
+  if (tbl) {
+    tbl.querySelector('tr:nth-child(1) th:nth-child(2)').textContent = periodo+' 25';
+    tbl.querySelector('tr:nth-child(1) th:nth-child(3)').textContent = periodo+' 26';
+    const rows = tbl.querySelectorAll('tr');
+    const data = [
+      [fmtK(sRb25), fmtK(sRb26), pct(sRb25,sRb26), sRb26>=sRb25],
+      [fmtK(sRl25), fmtK(sRl26), pct(sRl25,sRl26), sRl26>=sRl25],
+      [sDi25+'', sDi26+'', pct(sDi25,sDi26), sDi26>=sDi25],
+      [sRe25+'', sRe26+'', pct(sRe25,sRe26), sRe26>=sRe25],
+      ['R$ '+tk25, 'R$ '+tk26, pct(tk25,tk26), tk26>=tk25],
+      [mg25+'%', mg26+'%', ((mg26-mg25)>=0?'+':'')+((mg26-mg25).toFixed(1))+'pp', mg26>=mg25],
+      [pcD25+'%', pcD26+'%', ((pcD26-pcD25)>=0?'+':'')+((pcD26-pcD25).toFixed(1))+'pp', pcD26>=pcD25],
+    ];
+    data.forEach((d,i)=>{
+      const tr = rows[i+1]; if(!tr) return;
+      const tds = tr.querySelectorAll('td');
+      if(tds[1]) tds[1].textContent = d[0];
+      if(tds[2]) tds[2].textContent = d[1];
+      if(tds[3]) tds[3].innerHTML = `<span class="${d[3]?'vdown':'vup'}">${d[3]?'▲':'▼'} ${d[2]}</span>`;
+    });
+    // Atualizar cabeçalho do sec-head
+    const sh = document.querySelector('#v-comp-row .sec-head');
+    if(sh) sh.textContent = `${periodo}: 2025 vs 2026`;
+  }
 
-  mk('cv_comp_ocup',{type:'bar',data:{labels:mesesComp,datasets:barDs('2025',o25,'2026',o26)},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#9CA3AF',boxWidth:10}},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'%'}}},
-      scales:{x:{grid:NL},y:{grid:GR,max:30,ticks:{callback:v=>v+'%'}}}}});
+  // Destruir charts existentes antes de recriar
+  ['cv_comp_bar','cv_comp_diarias','cv_comp_ocup','cv_comp_ticket'].forEach(id=>{
+    if(CS[id]){CS[id].destroy();delete CS[id];}
+  });
 
-  mk('cv_comp_ticket',{type:'line',data:{labels:mesesComp,datasets:lineDs(t25,t26)},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#9CA3AF',boxWidth:10}},tooltip:{callbacks:{label:c=>'R$ '+c.raw}}},
-      scales:{x:{grid:NL},y:{grid:GR,ticks:{callback:v=>'R$'+v}}}}});
+  // Aguardar DOM estar visível antes de criar os charts
+  setTimeout(()=>{
+    const baseOpts = {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9CA3AF',boxWidth:10,font:{size:11}}}},
+    };
+    const el = id => document.getElementById(id);
+
+    if(el('cv_comp_bar')) mk('cv_comp_bar',{type:'bar',data:{labels:mesesComp,datasets:barDs('2025 Bruto',b25,'2026 Bruto',b26)},
+      options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{callbacks:{label:c=>fK(c.raw)}}},
+        scales:{x:{grid:NL,ticks:{color:'#9CA3AF'}},y:{grid:GR,ticks:{callback:v=>fK(v),color:'#9CA3AF'}}}}});
+
+    if(el('cv_comp_diarias')) mk('cv_comp_diarias',{type:'bar',data:{labels:mesesComp,datasets:barDs('2025',d25,'2026',d26)},
+      options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+' d'}}},
+        scales:{x:{grid:NL,ticks:{color:'#9CA3AF'}},y:{grid:GR,ticks:{callback:v=>v+'d',color:'#9CA3AF'}}}}});
+
+    if(el('cv_comp_ocup')) mk('cv_comp_ocup',{type:'bar',data:{labels:mesesComp,datasets:barDs('2025',o25,'2026',o26)},
+      options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+'%'}}},
+        scales:{x:{grid:NL,ticks:{color:'#9CA3AF'}},y:{grid:GR,ticks:{callback:v=>v+'%',color:'#9CA3AF'}}}}});
+
+    if(el('cv_comp_ticket')) mk('cv_comp_ticket',{type:'line',data:{labels:mesesComp,datasets:lineDs(t25,t26)},
+      options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{callbacks:{label:c=>'R$ '+Math.round(c.raw)}}},
+        scales:{x:{grid:NL,ticks:{color:'#9CA3AF'}},y:{grid:GR,ticks:{callback:v=>'R$'+v,color:'#9CA3AF'}}}}});
+  }, 80);
 }
 
 
@@ -5069,6 +5478,26 @@ function processarVendas(workbook) {
     vd[ano].extrasMes[mes]+= extras;
     vd[ano].diarias[mes]  += di;
     vd[ano].reservas[mes] += 1;
+
+    // Guardar reserva raw para o calendário
+    const entradaRaw = r['Data de Entrada'] || r['Entrada'] || r['Check-in'] || r['CheckIn'] || r[Object.keys(r).find(k=>k.toLowerCase().includes('entrada')||k.toLowerCase().includes('check-in')||k.toLowerCase().includes('checkin'))||''];
+    if (entradaRaw) {
+      let dtEntrada;
+      if (entradaRaw instanceof Date) dtEntrada = entradaRaw;
+      else if (typeof entradaRaw === 'number') { dtEntrada = new Date(Math.round((entradaRaw-25569)*86400*1000)); dtEntrada.setMinutes(dtEntrada.getMinutes()+dtEntrada.getTimezoneOffset()); }
+      else if (typeof entradaRaw === 'string') { dtEntrada = new Date(entradaRaw+'T12:00:00'); }
+      if (dtEntrada && !isNaN(dtEntrada)) {
+        const dtSaida = new Date(dtEntrada); dtSaida.setDate(dtSaida.getDate() + Math.round(di||1));
+        if (!window._reservasCalendario) window._reservasCalendario = [];
+        window._reservasCalendario.push({
+          chale, canal, ano, mes,
+          entrada: dtEntrada.toISOString().slice(0,10),
+          saida:   dtSaida.toISOString().slice(0,10),
+          diarias: Math.round(di||1), rb, rl,
+          status: r['Status da Reserva'] || '',
+        });
+      }
+    }
 
     if (vd[ano].canaisRec[canal] !== undefined) {
       vd[ano].canaisRec[canal]    += rb;
