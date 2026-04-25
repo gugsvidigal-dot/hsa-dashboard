@@ -695,9 +695,22 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
     <div class="ptabs">
       <button class="ptab on" id="vtab-2025" onclick="setVendasAno(2025,this)">2025</button>
       <button class="ptab"   id="vtab-2026" onclick="setVendasAno(2026,this)">2026 (Jan–Jul)</button>
+      <button class="ptab"   id="vtab-mensal" onclick="setVendasAno('mensal',this)">2026 (mensal)</button>
       <button class="ptab"   id="vtab-comp" onclick="setVendasAno('comp',this)">Comparativo</button>
     </div>
   </div>
+
+  <!-- Seletor de mês para visão mensal -->
+  <div id="v-meses-bar" class="hidden" style="margin-bottom:12px;">
+    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">
+      ${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m,i)=>
+        `<button id="vmes-${i}" onclick="setVendasMes(${i},this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-size:12px;transition:all .2s">${m}</button>`
+      ).join('')}
+    </div>
+  </div>
+
+  <!-- Container visão mensal -->
+  <div id="v-mensal-wrap" class="hidden"></div>
 
   <!-- KPIs dinâmicos -->
   <div id="v-kpis">
@@ -2346,6 +2359,115 @@ function openResDrill(mesIdx) {
 }
 
 
+let vMesSel = 0;
+
+function setVendasMes(mes, btn) {
+  vMesSel = mes;
+  document.querySelectorAll('[id^="vmes-"]').forEach(b => {
+    b.style.background = 'var(--surf2)';
+    b.style.color = 'var(--muted)';
+    b.style.borderColor = 'var(--border)';
+    b.style.fontWeight = 'normal';
+  });
+  if (btn) {
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.fontWeight = '700';
+  }
+  renderVendasMensal();
+}
+
+function renderVendasMensal() {
+  const wrap = document.getElementById('v-mensal-wrap');
+  if (!wrap) return;
+  const V26 = VDATA[2026], V25 = VDATA[2025];
+  if (!V26 || !V25) return;
+  const ML = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const m = vMesSel;
+  const rb26=V26.recBruta[m]||0, rb25=V25.recBruta[m]||0;
+  const rl26=V26.recLiq[m]||0,   rl25=V25.recLiq[m]||0;
+  const di26=V26.diarias[m]||0,  di25=V25.diarias[m]||0;
+  const re26=V26.reservas[m]||0, re25=V25.reservas[m]||0;
+  const tk26=di26>0?Math.round(rb26/di26):0, tk25=di25>0?Math.round(rb25/di25):0;
+  const ot26=(di26/(6*30.4)*100).toFixed(1), ot25=(di25/(6*30.4)*100).toFixed(1);
+  const sem = rb26===0;
+  const dp=(a,b)=>a>0?((b-a)/a*100).toFixed(0)+'%':(b>0?'+100%':'—');
+  const cor=(v)=>v>=0?'var(--green)':'var(--red)';
+  const kpis=[
+    {l:'Rec. Bruta',   a:rb25,b:rb26,f:v=>fK(v)},
+    {l:'Rec. Líquida', a:rl25,b:rl26,f:v=>fK(v)},
+    {l:'Diárias',      a:di25,b:di26,f:v=>v+'d'},
+    {l:'Reservas',     a:re25,b:re26,f:v=>v+''},
+    {l:'Ticket Médio', a:tk25,b:tk26,f:v=>'R$'+v},
+    {l:'Ocupação',     a:parseFloat(ot25),b:parseFloat(ot26),f:v=>v.toFixed(1)+'%'},
+  ];
+  const canais=['Booking','Direto','Agência','Expedia'];
+  const cm26=V26.canaisMes?V26.canaisMes[m]||{}:{};
+  const cm25=V25.canaisMes?V25.canaisMes[m]||{}:{};
+  const chs=['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const chm26=V26.chalesMes?V26.chalesMes[m]||{}:{};
+  const chm25=V25.chalesMes?V25.chalesMes[m]||{}:{};
+
+  wrap.innerHTML=`
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px">
+    <div style="font-size:32px">📅</div>
+    <div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px">${ML[m]} 2026 vs ${ML[m]} 2025</div>
+      <div style="font-size:12px;color:var(--muted)">${sem?'Sem reservas registradas neste mês':'Comparativo mensal · dados reais'}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:14px">
+    ${kpis.map(k=>{
+      const d=k.b-k.a, dp2=dp(k.a,k.b), c=cor(d);
+      return`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:14px;${sem?'opacity:.4':''}">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${k.l}</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <div><div style="font-size:9px;color:var(--muted)">2025</div><div style="font-size:13px;font-weight:600">${k.f(k.a)}</div></div>
+          <div style="text-align:right"><div style="font-size:9px;color:var(--muted)">2026</div><div style="font-size:16px;font-weight:700">${k.f(k.b)}</div></div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:5px;font-size:11px;font-weight:700;color:${sem?'var(--muted)':c}">${sem?'—':(d>=0?'▲ +':'▼ ')+dp2}</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="row c2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title">Receita · ${MS[m]}/25 vs ${MS[m]}/26</div><div class="chart-wrap" style="height:200px"><canvas id="cr_vmes_rec"></canvas></div></div>
+    <div class="card"><div class="card-title">Canais · ${MS[m]}/25 vs ${MS[m]}/26</div><div class="chart-wrap" style="height:200px"><canvas id="cr_vmes_canal"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="card-title">Chalés · ${MS[m]}/25 vs ${MS[m]}/26</div><div class="chart-wrap" style="height:200px"><canvas id="cr_vmes_chale"></canvas></div></div>
+
+  <div class="card" style="overflow-x:auto">
+    <div class="card-title">Resumo · ${ML[m]}</div>
+    <table class="ctbl">
+      <tr><th>Indicador</th><th style="text-align:right">${MS[m]}/2025</th><th style="text-align:right">${MS[m]}/2026</th><th style="text-align:right">Δ</th><th style="text-align:right">Δ%</th></tr>
+      ${kpis.map(k=>{const d=k.b-k.a,dp2=dp(k.a,k.b),c=cor(d);return`<tr>
+        <td>${k.l}</td><td style="text-align:right">${k.f(k.a)}</td>
+        <td style="text-align:right;font-weight:700">${k.f(k.b)}</td>
+        <td style="text-align:right;color:${c}">${d>=0?'+':''}${typeof d==='number'&&Math.abs(d)>10?fK(d):d.toFixed(1)}</td>
+        <td style="text-align:right;color:${c}">${dp2}</td>
+      </tr>`}).join('')}
+    </table>
+  </div>`;
+
+  setTimeout(()=>{
+    const opts={responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9CA3AF',boxWidth:10}},tooltip:{callbacks:{label:c=>fK(c.raw)}}},
+      scales:{x:{grid:NL,ticks:{color:'#9CA3AF',font:{size:10}}},y:{grid:GR,ticks:{callback:v=>fK(v)}}}};
+    mk('cr_vmes_rec',{type:'bar',data:{labels:['Rec. Bruta','Rec. Líquida'],datasets:[
+      {label:MS[m]+'/2025',data:[rb25,rl25],backgroundColor:'rgba(240,180,41,.7)',borderRadius:4},
+      {label:MS[m]+'/2026',data:[rb26,rl26],backgroundColor:'rgba(52,199,123,.7)',borderRadius:4}]},options:opts});
+    mk('cr_vmes_canal',{type:'bar',data:{labels:canais,datasets:[
+      {label:MS[m]+'/2025',data:canais.map(c=>cm25[c]||0),backgroundColor:'rgba(240,180,41,.7)',borderRadius:4},
+      {label:MS[m]+'/2026',data:canais.map(c=>cm26[c]||0),backgroundColor:'rgba(52,199,123,.7)',borderRadius:4}]},options:opts});
+    mk('cr_vmes_chale',{type:'bar',data:{labels:chs,datasets:[
+      {label:MS[m]+'/2025',data:chs.map(c=>chm25[c]||0),backgroundColor:'rgba(240,180,41,.7)',borderRadius:4},
+      {label:MS[m]+'/2026',data:chs.map(c=>chm26[c]||0),backgroundColor:'rgba(52,199,123,.7)',borderRadius:4}]},options:opts});
+  },100);
+}
+
 function setVendasAno(ano, btn){
   document.querySelectorAll('#view-vendas .ptab').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
@@ -2355,16 +2477,39 @@ function setVendasAno(ano, btn){
 
 // ════════ RENDER VENDAS ════════
 function renderVendas(){
-  const isComp = vAno === 'comp';
-  const compRow = document.getElementById('v-comp-row');
+  const isComp   = vAno === 'comp';
+  const isMensal = vAno === 'mensal';
+  const compRow  = document.getElementById('v-comp-row');
+  const mensalBar  = document.getElementById('v-meses-bar');
+  const mensalWrap = document.getElementById('v-mensal-wrap');
 
-  // Sections to show/hide based on mode
   const mainSections = ['v-kpis','v-rec-section','v-ocup-section','v-acum-section','v-chale-section','v-insights-section'];
   mainSections.forEach(id => {
     const el = document.getElementById(id);
-    if(el) el.classList.toggle('hidden', isComp);
+    if(el) el.classList.toggle('hidden', isComp || isMensal);
   });
-  if(compRow) compRow.classList.toggle('hidden', !isComp);
+  if(compRow)   compRow.classList.toggle('hidden', !isComp);
+  if(mensalBar)  mensalBar.classList.toggle('hidden', !isMensal);
+  if(mensalWrap) mensalWrap.classList.toggle('hidden', !isMensal);
+
+  // Popular botões de mês com opacidade baseada em dados
+  if (isMensal) {
+    const V26 = VDATA[2026];
+    const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    ML.forEach((m,i) => {
+      const btn = document.getElementById('vmes-'+i);
+      if (!btn) return;
+      const temDados = V26 && (V26.recBruta[i]||0) > 0;
+      btn.style.opacity = temDados ? '1' : '0.35';
+      btn.title = temDados ? '' : 'Sem dados';
+    });
+    // Selecionar primeiro mês com dados se nenhum selecionado ainda
+    const btnSel = document.getElementById('vmes-'+vMesSel);
+    setVendasMes(vMesSel, btnSel);
+    return;
+  }
+
+  if (isComp) return;
 
   if(isComp){
     renderVendasComp();
@@ -4872,6 +5017,7 @@ function processarVendas(workbook) {
       canaisRec: {}, canaisDias: {}, canaisRes: {},
       canaisEvolMes: { Booking:Array(12).fill(0), Direto:Array(12).fill(0), Agência:Array(12).fill(0), Expedia:Array(12).fill(0) },
       chales: {}, chalesDiarias: {}, chalesReservas: {},
+      chalesMes: Array.from({length:12}, ()=>({})),
     };
     CHALÉS.forEach(c => { vd[ano].chales[c]=0; vd[ano].chalesDiarias[c]=0; vd[ano].chalesReservas[c]=0; });
     ['Booking','Direto','Agência','Expedia'].forEach(c => {
@@ -4943,6 +5089,8 @@ function processarVendas(workbook) {
       vd[ano].chales[chale]         += rb;
       vd[ano].chalesDiarias[chale]  += di;
       vd[ano].chalesReservas[chale] += 1;
+      if (!vd[ano].chalesMes[mes][chale]) vd[ano].chalesMes[mes][chale] = 0;
+      vd[ano].chalesMes[mes][chale] += rb;
     }
   });
 
@@ -5003,6 +5151,7 @@ function processarVendas(workbook) {
       canaisMes,
       chales: {...v.chales}, chalesDiarias: {...v.chalesDiarias}, chalesReservas: {...v.chalesReservas},
       chalesTicket, chalesRevPAR,
+      chalesMes: v.chalesMes,
       pagsMes: v.pagsMes,
       extrasMes: v.extrasMes,
       subcanaisRec:  v.subcanaisRec  || {},
