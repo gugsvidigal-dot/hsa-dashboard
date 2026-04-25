@@ -2526,6 +2526,19 @@ function renderCalendarioMensal(ano, mes) {
   const isFallbackMode = fallbackCount > 0 && fallbackCount === reservas.length;
   const entradaKeyDetectada = window._calDebug?.entradaKey || '';
 
+  // Se fallback: não renderizar o calendário — mostrar lista de colunas para diagnóstico
+  if (isFallbackMode) {
+    const colNames = (window._calDebug?.allKeys || []);
+    const colsHtml = colNames.map((k,i) => `<span style="display:inline-block;background:var(--surf2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:11px;margin:2px;color:var(--text);">${i}: ${k.replace(/\n/g,'↵')}</span>`).join('');
+    grid.innerHTML = `
+      <div style="padding:14px;background:rgba(240,180,41,.07);border:1px solid rgba(240,180,41,.2);border-radius:8px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:600;color:var(--accent2);margin-bottom:6px;">⚠️ Coluna de data de check-in não identificada automaticamente</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Abaixo estão todas as colunas da aba <strong style="color:var(--text)">Vendas_BD</strong>. Me diga qual delas contém a <strong style="color:var(--text)">data de entrada</strong> (check-in) e eu corrijo:</div>
+        <div style="line-height:2;">${colsHtml}</div>
+      </div>`;
+    return;
+  }
+
 
   // ── Mapear ocupação: ocup[chale][dia] = {tipo, canal, rb} ──
   const ocup = {};
@@ -2562,14 +2575,6 @@ function renderCalendarioMensal(ano, mes) {
     &nbsp;·&nbsp; ${ocupCells} noites ocupadas de ${totalCells}
     &nbsp;·&nbsp; ${reservas.length} reservas no mês
   </div>`;
-
-  // Aviso de modo fallback (sem coluna de data exata)
-  if (isFallbackMode) {
-    html += `<div style="margin-bottom:10px;padding:10px 12px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.2);border-radius:8px;font-size:11px;color:var(--accent2);">
-      ⚠️ <strong>Datas aproximadas</strong> — coluna de entrada não encontrada no Excel (chave detectada: "${entradaKeyDetectada||'nenhuma'}").
-      As reservas estão posicionadas a partir do dia 1. Para datas exatas, informe o nome da coluna de check-in no seu Excel.
-    </div>`;
-  }
 
   // Grid
   html += `<div style="display:grid;grid-template-columns:84px repeat(${diasNoMes},minmax(22px,1fr));gap:2px;min-width:${minW}px;">`;
