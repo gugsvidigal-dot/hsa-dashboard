@@ -2486,150 +2486,145 @@ function setVendasMes(mes, btn) {
 
 // ════════ CALENDÁRIO DE OCUPAÇÃO ════════
 function renderCalendarioMensal(ano, mes) {
-  const wrap = document.getElementById('v-cal-wrap');
-  const grid = document.getElementById('cal-grid');
+  const wrap  = document.getElementById('v-cal-wrap');
+  const grid  = document.getElementById('cal-grid');
   const titulo = document.getElementById('cal-titulo');
   if (!wrap || !grid) return;
   wrap.classList.remove('hidden');
 
-  const ML = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const CHALÉS = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
-  const COR_CANAL = { Booking:'#E07B47', Direto:'#34C77B', Agência:'#5B8DEF', Expedia:'#A78BFA' };
+  const ML_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const CHAL    = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const COR_CANAL = { Booking:'#E07B47', Direto:'#34C77B', 'Agência':'#5B8DEF', Expedia:'#A78BFA' };
+  const DS = ['D','S','T','Q','Q','S','S'];
 
-  if (titulo) titulo.textContent = ML[mes] + ' ' + ano;
+  if (titulo) titulo.textContent = ML_NOME[mes] + ' ' + ano;
 
-  // Filtrar reservas do período
+  // ── Dias do mês — declarado ANTES de qualquer uso ──
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+
+  // ── Filtrar reservas ──
   const todasReservas = window._reservasCalendario || [];
   const reservas = todasReservas.filter(r => {
-    const dtE = new Date(r.entrada+'T12:00:00');
-    const dtS = new Date(r.saida+'T12:00:00');
-    const mesRef = new Date(ano, mes+1, 0);
-    const mesIni = new Date(ano, mes, 1);
-    return dtE <= mesRef && dtS >= mesIni;
+    const dtE = new Date(r.entrada + 'T12:00:00');
+    const dtS = new Date(r.saida   + 'T12:00:00');
+    return dtE <= new Date(ano, mes + 1, 0) && dtS >= new Date(ano, mes, 1);
   });
 
-  // Debug info — será mostrado temporariamente no calendário
-  const debugInfo = `Total reservas carregadas: ${todasReservas.length} | Neste mês: ${reservas.length} | Colunas detectadas: entrada="${window._calDebug?.entradaKey||'NÃO ENCONTRADA'}" saída="${window._calDebug?.saidaKey||'NÃO ENCONTRADA'}"`;
-  console.log('[HSA Cal]', debugInfo);
+  // ── Debug ──
+  console.log(`[HSA Cal] ${ML_NOME[mes]}/${ano} — total: ${todasReservas.length}, neste mês: ${reservas.length}, col.entrada: "${window._calDebug?.entradaKey||'?'}", col.saída: "${window._calDebug?.saidaKey||'?'}"`);
+
+  // ── Aviso se sem dados ──
   if (todasReservas.length === 0) {
-    grid.innerHTML = `<div style="padding:20px;color:var(--accent2);font-size:12px;background:rgba(240,180,41,.08);border-radius:8px;">
-      ⚠️ <strong>Sem dados de calendário</strong> — a coluna de data de entrada não foi encontrada no Excel.<br>
-      <span style="color:var(--muted);margin-top:6px;display:block;">Abra o console (F12) e procure por <code>[HSA Cal] Colunas Vendas_BD</code> para ver o nome exato da coluna no seu Excel.</span>
+    grid.innerHTML = `<div style="padding:16px;color:var(--accent2);font-size:12px;background:rgba(240,180,41,.08);border-radius:8px;">
+      ⚠️ <strong>Nenhuma reserva encontrada.</strong> Recarregue o Excel pelo Dropbox e tente novamente.
     </div>`;
     return;
   }
 
-  // Mapear quais chalés estão ocupados em cada dia, e se é check-in/out
-  // ocupacao[chale][dia] = { tipo: 'ocupado'|'checkin'|'checkout'|'livre', canal, hospede? }
+  // Verificar se está em modo fallback (sem datas reais de entrada)
+  const fallbackCount = reservas.filter(r => r.isFallback).length;
+  const isFallbackMode = fallbackCount > 0 && fallbackCount === reservas.length;
+  const entradaKeyDetectada = window._calDebug?.entradaKey || '';
+
+
+  // ── Mapear ocupação: ocup[chale][dia] = {tipo, canal, rb} ──
   const ocup = {};
-  CHALÉS.forEach(c => { ocup[c] = {}; });
+  CHAL.forEach(c => { ocup[c] = {}; });
 
   reservas.forEach(r => {
-    const dtE = new Date(r.entrada+'T12:00:00');
-    const dtS = new Date(r.saida+'T12:00:00');
+    if (!CHAL.includes(r.chale)) return;
+    const dtE = new Date(r.entrada + 'T12:00:00');
+    const dtS = new Date(r.saida   + 'T12:00:00');
     for (let d = 1; d <= diasNoMes; d++) {
-      const dtD = new Date(ano, mes, d);
+      const dtD        = new Date(ano, mes, d);
       const isCheckin  = dtE.getFullYear()===ano && dtE.getMonth()===mes && dtE.getDate()===d;
       const isCheckout = dtS.getFullYear()===ano && dtS.getMonth()===mes && dtS.getDate()===d;
-      const ocupado = dtD >= dtE && dtD < dtS; // noite: inclui entrada, exclui saída
-      if (CHALÉS.includes(r.chale)) {
-        if (isCheckin && isCheckout) {
-          ocup[r.chale][d] = {tipo:'checkin', canal:r.canal, rb:r.rb};
-        } else if (isCheckin) {
-          ocup[r.chale][d] = {tipo:'checkin', canal:r.canal, rb:r.rb};
-        } else if (isCheckout) {
-          // Checkout = dia livre (hóspede saiu)
-          ocup[r.chale][d] = ocup[r.chale][d] || {tipo:'checkout', canal:r.canal};
-        } else if (ocupado) {
-          ocup[r.chale][d] = {tipo:'ocupado', canal:r.canal, rb:r.rb};
-        }
-      }
+      const noite      = dtD >= dtE && dtD < dtS;
+      if (isCheckin)        ocup[r.chale][d] = { tipo:'checkin',  canal:r.canal, rb:r.rb };
+      else if (isCheckout)  ocup[r.chale][d] = ocup[r.chale][d] || { tipo:'checkout', canal:r.canal };
+      else if (noite)       ocup[r.chale][d] = { tipo:'ocupado',  canal:r.canal, rb:r.rb };
     }
   });
 
-  // Dia da semana de início (0=Dom)
-  const diasSemana = ['D','S','T','Q','Q','S','S'];
-  const primeiroDia = new Date(ano, mes, 1).getDay();
+  // ── Métricas ──
+  let ocupCells = 0;
+  CHAL.forEach(c => { for(let d=1;d<=diasNoMes;d++) if(ocup[c][d]?.tipo==='ocupado'||ocup[c][d]?.tipo==='checkin') ocupCells++; });
+  const totalCells = diasNoMes * CHAL.length;
+  const txOcup = totalCells > 0 ? (ocupCells / totalCells * 100).toFixed(1) : '0.0';
 
-  // Calcular taxa de ocupação do mês
-  let totalCells = diasNoMes * CHALÉS.length;
-  let ocupCells  = 0;
-  CHALÉS.forEach(c => { for(let d=1;d<=diasNoMes;d++) if(ocup[c][d]?.tipo==='ocupado'||ocup[c][d]?.tipo==='checkin') ocupCells++; });
-  const txOcup = totalCells > 0 ? (ocupCells/totalCells*100).toFixed(1) : '0.0';
+  // ── Montar HTML ──
+  const minW = Math.max(640, (diasNoMes + 1) * 34);
+  let html = '';
 
-  // Nomes curtos dos dias com offset
-  const headerDias = [];
-  for (let d = 1; d <= diasNoMes; d++) {
-    const dow = new Date(ano, mes, d).getDay();
-    headerDias.push({d, dow});
+  // Linha de métricas
+  html += `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">
+    Taxa de ocupação: <strong style="color:var(--text)">${txOcup}%</strong>
+    &nbsp;·&nbsp; ${ocupCells} noites ocupadas de ${totalCells}
+    &nbsp;·&nbsp; ${reservas.length} reservas no mês
+  </div>`;
+
+  // Aviso de modo fallback (sem coluna de data exata)
+  if (isFallbackMode) {
+    html += `<div style="margin-bottom:10px;padding:10px 12px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.2);border-radius:8px;font-size:11px;color:var(--accent2);">
+      ⚠️ <strong>Datas aproximadas</strong> — coluna de entrada não encontrada no Excel (chave detectada: "${entradaKeyDetectada||'nenhuma'}").
+      As reservas estão posicionadas a partir do dia 1. Para datas exatas, informe o nome da coluna de check-in no seu Excel.
+    </div>`;
   }
 
-  // Montar CSS grid inline
-  const COL = diasNoMes + 1; // +1 para label do chalé
-  const minW = Math.max(600, COL * 36);
+  // Grid
+  html += `<div style="display:grid;grid-template-columns:84px repeat(${diasNoMes},minmax(22px,1fr));gap:2px;min-width:${minW}px;">`;
 
-  let html = `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Taxa de ocupação do mês: <strong style="color:var(--text)">${txOcup}%</strong> · ${ocupCells} noites ocupadas de ${totalCells} possíveis</div>`;
-  html += `<div style="display:grid;grid-template-columns:90px repeat(${diasNoMes},1fr);gap:2px;min-width:${minW}px;">`;
-
-  // Header: chalé label vazio + dias
-  html += `<div style="font-size:9px;color:var(--muted);display:flex;align-items:flex-end;padding-bottom:4px;">Chalé</div>`;
-  headerDias.forEach(({d,dow})=>{
-    const fds = dow===0||dow===6;
-    html += `<div style="text-align:center;padding-bottom:4px;">
-      <div style="font-size:8px;color:${fds?'var(--accent2)':'var(--muted)'};line-height:1;">${diasSemana[dow]}</div>
-      <div style="font-size:10px;font-weight:${fds?'700':'400'};color:${fds?'var(--accent2)':'var(--muted)'};">${d}</div>
+  // Cabeçalho: label + dias
+  html += `<div></div>`;
+  for (let d = 1; d <= diasNoMes; d++) {
+    const dow = new Date(ano, mes, d).getDay();
+    const fds = dow === 0 || dow === 6;
+    html += `<div style="text-align:center;padding-bottom:3px;">
+      <div style="font-size:8px;color:${fds?'var(--accent2)':'var(--muted)'};line-height:1.2;">${DS[dow]}</div>
+      <div style="font-size:10px;font-weight:${fds?700:400};color:${fds?'var(--accent2)':'var(--muted)'};">${d}</div>
     </div>`;
-  });
+  }
 
   // Linhas por chalé
-  CHALÉS.forEach(chale => {
-    // Nome do chalé
-    html += `<div style="font-size:11px;color:var(--text);font-weight:500;display:flex;align-items:center;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chale}</div>`;
-
+  CHAL.forEach(chale => {
+    html += `<div style="font-size:11px;font-weight:500;color:var(--text);display:flex;align-items:center;padding-right:6px;">${chale}</div>`;
     for (let d = 1; d <= diasNoMes; d++) {
       const info = ocup[chale][d];
       const dow  = new Date(ano, mes, d).getDay();
-      const fds  = dow===0||dow===6;
-      let bg, border, cursor, tooltip='';
+      const fds  = dow === 0 || dow === 6;
+      let bg, brd, tip = '';
 
       if (!info) {
-        bg = fds ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.025)';
-        border = '1px solid rgba(255,255,255,.05)';
-        cursor = 'default';
-      } else if (info.tipo==='checkin') {
-        const cor = COR_CANAL[info.canal]||'#34C77B';
-        bg = cor+'99';
-        border = '2px solid '+cor;
-        cursor = 'pointer';
-        tooltip = `Check-in ${chale} · ${info.canal||''} · ${info.rb?'R$ '+Math.round(info.rb):''}`;
-      } else if (info.tipo==='checkout') {
-        bg = 'rgba(240,180,41,.2)';
-        border = '1px dashed rgba(240,180,41,.4)';
-        cursor = 'default';
-        tooltip = `Check-out ${chale}`;
+        bg  = fds ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.02)';
+        brd = '1px solid rgba(255,255,255,.06)';
+      } else if (info.tipo === 'checkin') {
+        const c = COR_CANAL[info.canal] || '#34C77B';
+        bg  = c + 'BB'; brd = `2px solid ${c}`;
+        tip = `▶ Check-in · ${chale} · ${info.canal||''} · ${info.rb?'R$'+Math.round(info.rb):''}`;
+      } else if (info.tipo === 'checkout') {
+        bg  = 'rgba(240,180,41,.18)'; brd = '1px dashed rgba(240,180,41,.5)';
+        tip = `◀ Check-out · ${chale}`;
       } else {
-        const cor = COR_CANAL[info.canal]||'#34C77B';
-        bg = cor+'55';
-        border = '1px solid '+cor+'88';
-        cursor = 'pointer';
-        tooltip = `Ocupado · ${chale} · ${info.canal||''}`;
+        const c = COR_CANAL[info.canal] || '#34C77B';
+        bg  = c + '66'; brd = `1px solid ${c}AA`;
+        tip = `Ocupado · ${chale} · ${info.canal||''}`;
       }
 
-      const icone = info?.tipo==='checkin' ? '▶' : info?.tipo==='checkout' ? '◀' : '';
-      html += `<div title="${tooltip}" style="height:28px;border-radius:4px;background:${bg};border:${border};cursor:${cursor};display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(255,255,255,.7);">${icone}</div>`;
+      const ico = info?.tipo === 'checkin' ? '<span style="font-size:7px">▶</span>' : info?.tipo === 'checkout' ? '<span style="font-size:7px">◀</span>' : '';
+      html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);">${ico}</div>`;
     }
   });
 
-  html += '</div>';
+  html += `</div>`;
 
   // Legenda de canais
-  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">`;
-  Object.entries(COR_CANAL).forEach(([canal,cor])=>{
+  html += `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">`;
+  Object.entries(COR_CANAL).forEach(([canal, cor]) => {
     html += `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
-      <div style="width:10px;height:10px;border-radius:2px;background:${cor};opacity:.8;"></div>${canal}
+      <div style="width:10px;height:10px;border-radius:2px;background:${cor};"></div>${canal}
     </div>`;
   });
-  html += '</div>';
+  html += `</div>`;
 
   grid.innerHTML = html;
 }
@@ -5536,23 +5531,37 @@ function processarVendas(workbook) {
       return null;
     };
 
-    const entradaRaw = entradaKey ? r[entradaKey] : (r['Data de Entrada'] || r['Entrada'] || r['Check-in'] || r['CheckIn']);
-    const saidaRaw   = saidaKey   ? r[saidaKey]   : (r['Data de Saída']  || r['Saída']   || r['Check-out'] || r['CheckOut'] || r['Saida']);
+    // Tentar todas as colunas possíveis de entrada, incluindo varredura completa
+    const entradaRaw = entradaKey ? r[entradaKey] :
+      r['Data de Entrada'] || r['Entrada'] || r['Check-in'] || r['CheckIn'] ||
+      r['Data Entrada'] || r['Dt Entrada'] || r['DtEntrada'] || r['dt_entrada'] ||
+      r['data_entrada'] || r['DataEntrada'] || r['ENTRADA'] || r['data de entrada'] ||
+      // Varredura: pega qualquer coluna que tenha uma data válida e nome contendo 'entr'
+      (() => { const k2 = allKeys.find(k => k.toLowerCase().replace(/\s/g,'').includes('entr')); return k2 ? r[k2] : null; })();
 
-    const dtEntrada = parseExcelDate(entradaRaw);
-    if (dtEntrada) {
-      let dtSaida = parseExcelDate(saidaRaw);
-      // Se não tiver data de saída, calcula pela quantidade de diárias
-      if (!dtSaida) { dtSaida = new Date(dtEntrada); dtSaida.setDate(dtSaida.getDate() + Math.round(di || 1)); }
-      if (!window._reservasCalendario) window._reservasCalendario = [];
-      window._reservasCalendario.push({
-        chale, canal, ano, mes,
-        entrada: dtEntrada.toISOString().slice(0, 10),
-        saida:   dtSaida.toISOString().slice(0, 10),
-        diarias: Math.round(di || 1), rb, rl,
-        status: r['Status da Reserva'] || '',
-      });
-    }
+    const saidaRaw = saidaKey ? r[saidaKey] :
+      r['Data de Saída'] || r['Saída'] || r['Check-out'] || r['CheckOut'] || r['Saida'] ||
+      r['Data Saída'] || r['Dt Saída'] || r['DtSaida'] || r['dt_saida'] ||
+      r['data_saida'] || r['DataSaida'] || r['SAIDA'] || r['data de saida'] ||
+      (() => { const k2 = allKeys.find(k => k.toLowerCase().replace(/\s/g,'').includes('said')||k.toLowerCase().includes('saí')); return k2 ? r[k2] : null; })();
+
+    let dtEntrada = parseExcelDate(entradaRaw);
+    // FALLBACK: sem coluna de data, usa dia 1 do mês como aproximação
+    if (!dtEntrada) dtEntrada = new Date(ano, mes, 1, 12);
+    const isFallback = !entradaRaw;
+
+    let dtSaida = parseExcelDate(saidaRaw);
+    if (!dtSaida) { dtSaida = new Date(dtEntrada); dtSaida.setDate(dtSaida.getDate() + Math.round(di || 1)); }
+
+    if (!window._reservasCalendario) window._reservasCalendario = [];
+    window._reservasCalendario.push({
+      chale, canal, ano, mes,
+      entrada: dtEntrada.toISOString().slice(0, 10),
+      saida:   dtSaida.toISOString().slice(0, 10),
+      diarias: Math.round(di || 1), rb, rl,
+      isFallback,
+      status: r['Status da Reserva'] || '',
+    });
 
     if (vd[ano].canaisRec[canal] !== undefined) {
       vd[ano].canaisRec[canal]    += rb;
