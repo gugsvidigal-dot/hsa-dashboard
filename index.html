@@ -13,6 +13,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HSA · Dashboard Gerencial</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -702,11 +703,7 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 
   <!-- Seletor de mês para visão mensal -->
   <div id="v-meses-bar" class="hidden" style="margin-bottom:12px;">
-    <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">
-      ${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((m,i)=>
-        `<button id="vmes-${i}" onclick="setVendasMes(${i},this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-size:12px;transition:all .2s">${m}</button>`
-      ).join('')}
-    </div>
+    <div id="v-meses-btns" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;"></div>
   </div>
 
   <!-- Container visão mensal -->
@@ -2495,15 +2492,20 @@ function renderVendas(){
   // Popular botões de mês com opacidade baseada em dados
   if (isMensal) {
     const V26 = VDATA[2026];
-    const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    ML.forEach((m,i) => {
+    const MS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const btnsWrap = document.getElementById('v-meses-btns');
+    if (btnsWrap && !btnsWrap.children.length) {
+      btnsWrap.innerHTML = MS.map((m,i) =>
+        `<button id="vmes-${i}" onclick="setVendasMes(${i},this)" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-size:12px;transition:all .2s">${m}</button>`
+      ).join('');
+    }
+    MS.forEach((m,i) => {
       const btn = document.getElementById('vmes-'+i);
       if (!btn) return;
       const temDados = V26 && (V26.recBruta[i]||0) > 0;
       btn.style.opacity = temDados ? '1' : '0.35';
-      btn.title = temDados ? '' : 'Sem dados';
+      btn.title = temDados ? m+'/2026' : 'Sem dados';
     });
-    // Selecionar primeiro mês com dados se nenhum selecionado ainda
     const btnSel = document.getElementById('vmes-'+vMesSel);
     setVendasMes(vMesSel, btnSel);
     return;
@@ -4862,7 +4864,6 @@ function limparReservas() {
 }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ═══════════════ MOTOR DINÂMICO — processa Excel e recalcula tudo ═══════════════
 
