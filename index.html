@@ -2817,12 +2817,12 @@ function renderVendasMensal() {
   const dp=(a,b)=>a>0?((b-a)/a*100).toFixed(0)+'%':(b>0?'+100%':'—');
   const cor=(v)=>v>=0?'var(--green)':'var(--red)';
   const kpis=[
-    {l:'Rec. Bruta',   a:rb25,b:rb26,f:v=>fK(v)},
-    {l:'Rec. Líquida', a:rl25,b:rl26,f:v=>fK(v)},
-    {l:'Diárias',      a:di25,b:di26,f:v=>v+'d'},
-    {l:'Reservas',     a:re25,b:re26,f:v=>v+''},
-    {l:'Ticket Médio', a:tk25,b:tk26,f:v=>'R$'+v},
-    {l:'Ocupação',     a:parseFloat(ot25),b:parseFloat(ot26),f:v=>v.toFixed(1)+'%'},
+    {l:'Rec. Bruta',   a:rb25,       b:rb26,       f:v=>fK(v),              fd:v=>fK(v)},
+    {l:'Rec. Líquida', a:rl25,       b:rl26,       f:v=>fK(v),              fd:v=>fK(v)},
+    {l:'Diárias',      a:di25,       b:di26,       f:v=>Math.round(v)+'d',  fd:v=>Math.round(v)+'d'},
+    {l:'Reservas',     a:re25,       b:re26,       f:v=>Math.round(v)+'',   fd:v=>Math.round(v)+''},
+    {l:'Ticket Médio', a:tk25,       b:tk26,       f:v=>'R$'+Math.round(v), fd:v=>'R$'+Math.round(v)},
+    {l:'Ocupação',     a:parseFloat(ot25)||0, b:parseFloat(ot26)||0, f:v=>(+v||0).toFixed(1)+'%', fd:v=>(+v||0).toFixed(1)+'pp'},
   ];
   const canais=['Booking','Direto','Agência','Expedia'];
   const cm26=V26.canaisMes?V26.canaisMes[m]||{}:{};
@@ -2833,7 +2833,29 @@ function renderVendasMensal() {
 
   wrap.innerHTML=`
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px">
-    <div style="font-size:32px">📅</div>
+    <canvas id="cal-icon-canvas" width="48" height="48" style="flex-shrink:0;"></canvas>
+    <script>
+    (function(){
+      const c = document.getElementById('cal-icon-canvas');
+      if(!c) return;
+      const ctx = c.getContext('2d');
+      const ms = '${MS[m].toUpperCase()}';
+      // Corpo
+      ctx.fillStyle='#1E2330'; ctx.strokeStyle='#E07B47'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(4,8,40,36,5); ctx.fill(); ctx.stroke();
+      // Topo
+      ctx.fillStyle='#E07B47';
+      ctx.beginPath(); ctx.roundRect(4,8,40,13,5); ctx.fill();
+      ctx.fillRect(4,15,40,6);
+      // Argolas
+      ctx.beginPath(); ctx.roundRect(15,4,3,8,1.5); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(30,4,3,8,1.5); ctx.fill();
+      // Texto
+      ctx.fillStyle='#E07B47'; ctx.font='bold 11px Inter,sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(ms, 24, 33);
+    })();
+    </script>
     <div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:22px">${ML[m]} 2026 vs ${ML[m]} 2025</div>
       <div style="font-size:12px;color:var(--muted)">${sem?'Sem reservas registradas neste mês':'Comparativo mensal · dados reais'}</div>
@@ -2867,7 +2889,7 @@ function renderVendasMensal() {
       ${kpis.map(k=>{const d=k.b-k.a,dp2=dp(k.a,k.b),c=cor(d);return`<tr>
         <td>${k.l}</td><td style="text-align:right">${k.f(k.a)}</td>
         <td style="text-align:right;font-weight:700">${k.f(k.b)}</td>
-        <td style="text-align:right;color:${c}">${d>=0?'+':''}${typeof d==='number'&&Math.abs(d)>10?fK(d):d.toFixed(1)}</td>
+        <td style="text-align:right;color:${c}">${d>=0?'+':''}${k.fd(Math.abs(d))}</td>
         <td style="text-align:right;color:${c}">${dp2}</td>
       </tr>`}).join('')}
     </table>
@@ -3413,22 +3435,11 @@ const RDATA = {
     totalReservas:225, totalDiarias:556,
   },
   2026: {
-    meses: ['Jan', 'Fev', 'Mar'],
-    recBruta:   [29129, 30280, 26648],
-    otaBdg:     [3942, 3752, 3235],
-    pagsVbd:    [798, 999, 725],
-    recLiq:     [26013, 25486, 22592],
-    opexSemOTA: [25613, 25631, 23691],
-    capex:      [1057, 1357, 2748],
-    finex:      [6765, 5778, 5937],
-    res1: [400, -145, -1099],
-    res2: [-657, -1502, -3847],
-    res3: [-7422, -7280, -9784],
-    totRecBruta:86057, totOTA:10929, totPagS:2522, totRecLiq:74091,
-    totOpexSemOTA:74935, totRes1:-844, totCapex:5162, totRes2:-6006,
-    totFinex:18480, totRes3:-24486,
-    totalReservas:44,
-    totalDiarias:95,
+    meses: [], recBruta: [], otaBdg: [], pagsVbd: [], recLiq: [],
+    opexSemOTA: [], capex: [], finex: [], res1: [], res2: [], res3: [],
+    totRecBruta:0, totOTA:0, totPagS:0, totRecLiq:0,
+    totOpexSemOTA:0, totRes1:0, totCapex:0, totRes2:0,
+    totFinex:0, totRes3:0, totalReservas:0, totalDiarias:0,
   }
 };
 let rAno = 2025;
@@ -5516,7 +5527,7 @@ function processarVendas(workbook) {
   const vd = {};
   anos.forEach(ano => {
     vd[ano] = {
-      recBruta: Array(12).fill(0), recLiq: Array(12).fill(0),
+      recBruta: Array(12).fill(0), recLiq: Array(12).fill(0), recLiqVbd: Array(12).fill(0),
       pagsMes: Array(12).fill(0), extrasMes: Array(12).fill(0),
       diarias: Array(12).fill(0), reservas: Array(12).fill(0),
       canaisRec: {}, canaisDias: {}, canaisRes: {},
@@ -5570,6 +5581,7 @@ function processarVendas(workbook) {
 
     vd[ano].recBruta[mes] += rb;
     vd[ano].recLiq[mes]   += rl;
+    vd[ano].recLiqVbd[mes]+= rl; // Rec. Líq direto do Vendas_BD
     vd[ano].pagsMes[mes]  += pags;
     vd[ano].extrasMes[mes]+= extras;
     vd[ano].diarias[mes]  += di;
@@ -5679,7 +5691,7 @@ function processarVendas(workbook) {
 
     VDATA[ano] = {
       label, meses: ML,
-      recBruta: rb.map(Math.round), recLiq: v.recLiq.map(Math.round),
+      recBruta: rb.map(Math.round), recLiq: v.recLiq.map(Math.round), recLiqVbd: v.recLiqVbd.map(Math.round),
       diarias: di.map(Math.round), reservas: v.reservas,
       ticket, ocup,
       totalDiarias: Math.round(totalDi), totalReservas: totalRes,
@@ -5797,14 +5809,14 @@ function processarGastos(workbook) {
   CATS26.CAPEX = toArr(cats[2026].CAPEX);
   CATS26.FINEX = toArr(cats[2026].FINEX);
 
-  // Booking e Expedia por mês (valores reais do BD_Gastos)
+  // Booking + Agência por mês do BD_Gastos (OTA parcial — Expedia vem do Vendas_BD)
   window.OTA_MES_25 = Array(12).fill(0);
   window.OTA_MES_26 = Array(12).fill(0);
   rows.forEach(r => {
     const tipo = r['Tipo'];
     if (tipo !== 'OPEX') return;
     const cat = r['Categoria'] || '';
-    if (!['Booking','Expedia','EXPEDIA','Agência','Agencia'].includes(cat)) return;
+    if (!['Booking','Agência','Agencia','Expedia','EXPEDIA'].includes(cat)) return; // Booking + Agência + Expedia do BD_Gastos
     const anoRaw = parseInt(parseFloat(r['Ano']));
     if (![2025,2026].includes(anoRaw)) return;
     const dtKey = Object.keys(r).find(k => k.includes('Aj.')) || 'Data Transação Aj.';
@@ -5872,47 +5884,47 @@ function calcularResultado() {
   [2025, 2026].forEach(ano => {
     const V = VDATA[ano];
     if (!V) return;
-    const ga   = ano===2025 ? D25 : D26;
-    const cats = ano===2025 ? CATS25 : CATS26;
+    const ga      = ano === 2025 ? D25 : D26;
+    const ML      = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const nMeses  = ano === 2025 ? 12 : Math.max(1, V.recBruta.filter(v => v > 0).length);
 
-    // Booking e Expedia do BD_Gastos por mês (valores reais)
-    const otaMes = (ano===2025 ? window.OTA_MES_25 : window.OTA_MES_26) || Array(12).fill(0);
+    // Rec. Líq vem direto do Vendas_BD (já deduz Booking+Agência+Expedia)
+    const recBruta   = V.recBruta.slice(0, nMeses);
+    const recLiqVbd  = (V.recLiqVbd || V.recLiq).slice(0, nMeses).map(Math.round);
+    const pagsMes    = (V.pagsMes || Array(12).fill(0)).slice(0, nMeses).map(Math.round);
 
-    // OPEX limpo por mês = OPEX - Booking - Expedia (reais)
-    const opexLimpo = ga.OPEX.map((v, m) => Math.round(v - otaMes[m]));
+    // OTA implícito = Rec. Bruta - Rec. Líq(VBD) - PagS
+    const otaMes     = recBruta.map((rb, m) => Math.round(rb - recLiqVbd[m] - pagsMes[m]));
 
-    // RecLiq = RecBruta - OTA(BD_Gastos) - PagS(Vendas_BD)
-    const pagsMes = V.pagsMes || Array(12).fill(0);
-    const recLiqRes = V.recBruta.map((rb, m) => rb - otaMes[m] - pagsMes[m]);
+    // OPEX sem OTA = BD_Gastos OPEX - OTA (BD_Gastos já contém Booking+Agência+Expedia)
+    const otaBdGastosMes = (ano === 2025 ? window.OTA_MES_25 : window.OTA_MES_26) || Array(12).fill(0);
+    const opexSemOTA = Array.from({length: nMeses}, (_, m) =>
+      Math.round((ga.OPEX[m] || 0) - (otaBdGastosMes[m] || 0))
+    );
 
+    const recLiq = recLiqVbd.map((rl, m) => rl - pagsMes[m]);
+    // Resultado
+    const res1 = recLiq.map((rl, m) => rl - opexSemOTA[m]);
+    const res2 = res1.map((v, m)    => v  - (ga.CAPEX[m] || 0));
+    const res3 = res2.map((v, m)    => v  - (ga.FINEX[m] || 0));
 
-    const nMeses = ano===2025 ? 12 : Math.max(1, V.recBruta.filter(v=>v>0).length);
-    const ML = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-
-    const res1 = Array.from({length:nMeses}, (_,m) => Math.round(recLiqRes[m] - opexLimpo[m]));
-    const res2 = res1.map((v, m) => v - (ga.CAPEX[m]||0));
-    const res3 = res2.map((v, m) => v - (ga.FINEX[m]||0));
+    const sum = arr => arr.reduce((s, v) => s + (v || 0), 0);
 
     RDATA[ano] = {
-      meses:        ML.slice(0, nMeses),
-      recBruta:     V.recBruta.slice(0, nMeses),
-      otaBdg:       otaMes.slice(0, nMeses).map(Math.round),
-      pagsVbd:      pagsMes.slice(0, nMeses).map(Math.round),
-      recLiq:       recLiqRes.slice(0, nMeses).map(Math.round),
-      opexSemOTA:   opexLimpo.slice(0, nMeses),
-      capex:        ga.CAPEX.slice(0, nMeses),
-      finex:        ga.FINEX.slice(0, nMeses),
+      meses: ML.slice(0, nMeses),
+      recBruta, otaBdg: otaMes, pagsVbd: pagsMes, recLiq,
+      opexSemOTA, capex: ga.CAPEX.slice(0, nMeses), finex: ga.FINEX.slice(0, nMeses),
       res1, res2, res3,
-      totRecBruta:  V.recBruta.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totOTA:       otaMes.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totPagS:      pagsMes.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totRecLiq:    recLiqRes.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totOpexSemOTA:opexLimpo.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totRes1:      res1.reduce((s,v)=>s+v,0),
-      totCapex:     ga.CAPEX.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totRes2:      res2.reduce((s,v)=>s+v,0),
-      totFinex:     ga.FINEX.slice(0,nMeses).reduce((s,v)=>s+v,0),
-      totRes3:      res3.reduce((s,v)=>s+v,0),
+      totRecBruta:   sum(recBruta),
+      totOTA:        sum(otaMes),
+      totPagS:       sum(pagsMes),
+      totRecLiq:     sum(recLiq),
+      totOpexSemOTA: sum(opexSemOTA),
+      totRes1:       sum(res1),
+      totCapex:      sum(ga.CAPEX.slice(0, nMeses)),
+      totRes2:       sum(res2),
+      totFinex:      sum(ga.FINEX.slice(0, nMeses)),
+      totRes3:       sum(res3),
       totalReservas: V.totalReservas,
       totalDiarias:  V.totalDiarias,
     };
