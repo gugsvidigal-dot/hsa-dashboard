@@ -805,12 +805,12 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
     <div class="card" style="padding:0;overflow:hidden;">
       <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);">Calendário de Ocupação · <span id="cal-titulo" style="color:var(--text);text-transform:none;letter-spacing:0;font-weight:600;"></span></div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
-            <div style="width:12px;height:12px;border-radius:3px;background:var(--green);opacity:.8;"></div>Ocupado
-            <div style="width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.06);border:1px solid var(--border);margin-left:6px;"></div>Livre
-            <div style="width:12px;height:12px;border-radius:3px;background:rgba(240,180,41,.5);margin-left:6px;"></div>Check-in/out
-          </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);">
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:12px;border-radius:3px;background:#E07B47;"></div>Booking</div>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:12px;border-radius:3px;background:#34C77B;"></div>Direto</div>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:12px;border-radius:3px;background:#5B8DEF;"></div>Agência</div>
+          <div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:12px;border-radius:3px;background:#A78BFA;"></div>Expedia</div>
+          <div style="display:flex;align-items:center;gap:5px;color:var(--muted);border-left:1px solid var(--border);padding-left:14px;"><span style="font-size:9px;margin-right:2px;">▶</span>Check-in &nbsp;<span style="font-size:9px;margin-right:2px;">◀</span>Check-out</div>
         </div>
       </div>
       <div id="cal-grid" style="padding:16px 20px 20px;overflow-x:auto;"></div>
@@ -2493,7 +2493,7 @@ function renderCalendarioMensal(ano, mes) {
   wrap.classList.remove('hidden');
 
   const ML_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const CHAL    = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const CHAL    = ['Charmey','Cheverny','Monblanc','Chamonix','Everest','Martigny','Monviso'];
   const COR_CANAL = { Booking:'#E07B47', Direto:'#34C77B', 'Agência':'#5B8DEF', Expedia:'#A78BFA' };
   const DS = ['D','S','T','Q','Q','S','S'];
 
@@ -2534,39 +2534,78 @@ function renderCalendarioMensal(ano, mes) {
     if (!CHAL.includes(r.chale)) return;
     const dtE = new Date(r.entrada + 'T12:00:00');
     const dtS = new Date(r.saida   + 'T12:00:00');
+
+    // Primeiro dia visível desta reserva no mês (pode ser dia 1 se entrou antes)
+    const primeiroDiaNoMes = (dtE.getFullYear() === ano && dtE.getMonth() === mes)
+      ? dtE.getDate() : 1;
+    const checkinNoMes = dtE.getFullYear() === ano && dtE.getMonth() === mes;
+    const checkoutNoMes = dtS.getFullYear() === ano && dtS.getMonth() === mes;
+
     for (let d = 1; d <= diasNoMes; d++) {
-      const dtD        = new Date(ano, mes, d);
-      const isCheckin  = dtE.getFullYear()===ano && dtE.getMonth()===mes && dtE.getDate()===d;
-      const isCheckout = dtS.getFullYear()===ano && dtS.getMonth()===mes && dtS.getDate()===d;
-      const noite      = dtD >= dtE && dtD < dtS;
-      if (isCheckin)        ocup[r.chale][d] = { tipo:'checkin',  canal:r.canal, rb:r.rb };
-      else if (isCheckout)  ocup[r.chale][d] = ocup[r.chale][d] || { tipo:'checkout', canal:r.canal };
-      else if (noite)       ocup[r.chale][d] = { tipo:'ocupado',  canal:r.canal, rb:r.rb };
+      const dtD      = new Date(ano, mes, d);
+      const noite    = dtD >= dtE && dtD < dtS; // ocupa a noite do dia d
+
+      if (!noite) {
+        // Dia de checkout: chalé livre mas marcar saída
+        if (checkoutNoMes && dtS.getDate() === d) {
+          // Só marca checkout se não há outra reserva ocupando (checkin no mesmo dia)
+          if (!ocup[r.chale][d] || ocup[r.chale][d].tipo === 'checkout') {
+            ocup[r.chale][d] = { tipo: 'checkout', canal: r.canal };
+          }
+        }
+        continue;
+      }
+
+      // Dia ocupado — determinar tipo
+      const tipo = (checkinNoMes && d === dtE.getDate())
+        ? 'checkin'
+        : (d === primeiroDiaNoMes && !checkinNoMes)
+          ? 'checkin_cont' // entrou antes do mês, primeiro dia visível
+          : 'ocupado';
+
+      // Não sobrescrever checkin com ocupado
+      if (!ocup[r.chale][d] || ocup[r.chale][d].tipo === 'checkout') {
+        ocup[r.chale][d] = { tipo, canal: r.canal, rb: r.rb,
+          entrada: r.entrada, saida: r.saida, diarias: r.diarias };
+      }
     }
   });
 
   // ── Métricas ──
-  let ocupCells = 0;
-  CHAL.forEach(c => { for(let d=1;d<=diasNoMes;d++) if(ocup[c][d]?.tipo==='ocupado'||ocup[c][d]?.tipo==='checkin') ocupCells++; });
+  let ocupCells = 0, ocupFDS = 0, totalFDS = 0;
+  CHAL.forEach(c => {
+    for (let d = 1; d <= diasNoMes; d++) {
+      const dow = new Date(ano, mes, d).getDay();
+      const isFDS = dow === 0 || dow === 6; // Dom ou Sáb
+      const ocup_d = ocup[c][d]?.tipo === 'ocupado' || ocup[c][d]?.tipo === 'checkin' || ocup[c][d]?.tipo === 'checkin_cont';
+      if (ocup_d) ocupCells++;
+      if (isFDS) { totalFDS++; if (ocup_d) ocupFDS++; }
+    }
+  });
   const totalCells = diasNoMes * CHAL.length;
-  const txOcup = totalCells > 0 ? (ocupCells / totalCells * 100).toFixed(1) : '0.0';
+  const txOcup  = totalCells > 0 ? (ocupCells / totalCells * 100).toFixed(1) : '0.0';
+  const txFDS   = totalFDS   > 0 ? (ocupFDS   / totalFDS   * 100).toFixed(1) : '0.0';
+  const corFDS  = parseFloat(txFDS) >= parseFloat(txOcup) ? 'var(--green)' : 'var(--accent2)';
 
   // ── Montar HTML ──
   const minW = Math.max(640, (diasNoMes + 1) * 34);
   let html = '';
 
   // Linha de métricas
-  html += `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">
-    Taxa de ocupação: <strong style="color:var(--text)">${txOcup}%</strong>
-    &nbsp;·&nbsp; ${ocupCells} noites ocupadas de ${totalCells}
-    &nbsp;·&nbsp; ${reservas.length} reservas no mês
+  html += `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;font-size:11px;color:var(--muted);margin-bottom:10px;">
+    <span>Ocupação geral: <strong style="color:var(--text)">${txOcup}%</strong> <span style="opacity:.6">(${ocupCells}/${totalCells} noites)</span></span>
+    <span style="border-left:1px solid var(--border);padding-left:16px;">
+      Fim de semana: <strong style="color:${corFDS}">${txFDS}%</strong> <span style="opacity:.6">(${ocupFDS}/${totalFDS} noites)</span>
+    </span>
+    <span style="border-left:1px solid var(--border);padding-left:16px;">${reservas.length} reservas no mês</span>
   </div>`;
 
-  // Grid
-  html += `<div style="display:grid;grid-template-columns:84px repeat(${diasNoMes},minmax(22px,1fr));gap:2px;min-width:${minW}px;">`;
+  // Grid — overflow no container interno para sticky funcionar
+  html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">`;
+  html += `<div style="display:grid;grid-template-columns:90px repeat(${diasNoMes},minmax(24px,1fr));gap:2px;min-width:${minW}px;position:relative;">`;
 
-  // Cabeçalho: label + dias
-  html += `<div></div>`;
+  // Cabeçalho: célula vazia sticky + dias
+  html += `<div style="position:sticky;left:0;z-index:3;background:var(--surf);"></div>`;
   for (let d = 1; d <= diasNoMes; d++) {
     const dow = new Date(ano, mes, d).getDay();
     const fds = dow === 0 || dow === 6;
@@ -2578,7 +2617,7 @@ function renderCalendarioMensal(ano, mes) {
 
   // Linhas por chalé
   CHAL.forEach(chale => {
-    html += `<div style="font-size:11px;font-weight:500;color:var(--text);display:flex;align-items:center;padding-right:6px;">${chale}</div>`;
+    html += `<div style="position:sticky;left:0;z-index:2;background:var(--surf);font-size:11px;font-weight:500;color:var(--text);display:flex;align-items:center;padding-right:8px;white-space:nowrap;">${chale}</div>`;
     for (let d = 1; d <= diasNoMes; d++) {
       const info = ocup[chale][d];
       const dow  = new Date(ano, mes, d).getDay();
@@ -2590,38 +2629,37 @@ function renderCalendarioMensal(ano, mes) {
         brd = '1px solid rgba(255,255,255,.06)';
       } else if (info.tipo === 'checkin') {
         const c = COR_CANAL[info.canal] || '#34C77B';
-        bg  = c + 'BB'; brd = `2px solid ${c}`;
+        bg  = c + 'EE'; brd = `2px solid ${c}`;
         tip = `▶ Check-in · ${chale} · ${info.canal||''} · ${info.rb?'R$'+Math.round(info.rb):''}`;
+      } else if (info.tipo === 'checkin_cont') {
+        // Chegou antes do mês, primeiro dia visível
+        const c = COR_CANAL[info.canal] || '#34C77B';
+        bg  = c + '88'; brd = `1px dashed ${c}`;
+        tip = `Ocupado (entrou ${info.entrada}) · ${chale} · ${info.canal||''}`;
       } else if (info.tipo === 'checkout') {
-        bg  = 'rgba(240,180,41,.18)'; brd = '1px dashed rgba(240,180,41,.5)';
+        bg  = 'rgba(255,255,255,.04)'; brd = '1px dashed rgba(255,255,255,.15)';
         tip = `◀ Check-out · ${chale}`;
       } else {
         const c = COR_CANAL[info.canal] || '#34C77B';
         bg  = c + '66'; brd = `1px solid ${c}AA`;
-        tip = `Ocupado · ${chale} · ${info.canal||''}`;
+        tip = `Ocupado · ${chale} · ${info.canal||''} · entrada ${info.entrada||''}`;
       }
 
-      const ico = info?.tipo === 'checkin' ? '<span style="font-size:7px">▶</span>' : info?.tipo === 'checkout' ? '<span style="font-size:7px">◀</span>' : '';
-      html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8);">${ico}</div>`;
+      const ico = (info?.tipo === 'checkin')
+        ? `<span style="font-size:8px;opacity:.9">▶</span>`
+        : (info?.tipo === 'checkout')
+          ? `<span style="font-size:8px;opacity:.5">◀</span>`
+          : '';
+      html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;color:#fff;">${ico}</div>`;
     }
   });
 
-  html += `</div>`;
-
-  // Legenda de canais
-  html += `<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">`;
-  Object.entries(COR_CANAL).forEach(([canal, cor]) => {
-    html += `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
-      <div style="width:10px;height:10px;border-radius:2px;background:${cor};"></div>${canal}
-    </div>`;
-  });
-  html += `</div>`;
-
+  html += `</div></div>`; // fecha grid + overflow wrapper
   grid.innerHTML = html;
 }
 
 function buildCalendario(ano, mes) {
-  const CHALÉS_LIST = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const CHALÉS_LIST = ['Charmey','Cheverny','Monblanc','Chamonix','Everest','Martigny','Monviso'];
   const CORES_CHALE = {
     Everest:  '#E07B47', Monviso:  '#5B8DEF', Martigny: '#34C77B',
     Charmey:  '#F0B429', Cheverny: '#A78BFA', Monblanc: '#F05252',
@@ -2748,7 +2786,7 @@ function renderVendasMensal() {
   const canais=['Booking','Direto','Agência','Expedia'];
   const cm26=V26.canaisMes?V26.canaisMes[m]||{}:{};
   const cm25=V25.canaisMes?V25.canaisMes[m]||{}:{};
-  const chs=['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+  const chs=['Charmey','Cheverny','Monblanc','Chamonix','Everest','Martigny','Monviso'];
   const chm26=V26.chalesMes?V26.chalesMes[m]||{}:{};
   const chm25=V25.chalesMes?V25.chalesMes[m]||{}:{};
 
@@ -5272,7 +5310,7 @@ function limparReservas() {
 
 const STATUS_OK = ['Concluída','Confirmada e Paga Parcial','Concluída - ag. Pgto agência','Confirmada e Paga 100%','Confirmada e Não Paga','Confirmada e CC Inválido','Concluída - No Show','Em cotação'];
 const TIPOS_GASTO = ['OPEX','CAPEX','FINEX'];
-const CHALÉS = ['Everest','Monviso','Martigny','Charmey','Cheverny','Monblanc'];
+const CHALÉS = ['Charmey','Cheverny','Monblanc','Chamonix','Everest','Martigny','Monviso'];
 const MESES_DIAS = [31,28,31,30,31,30,31,31,30,31,30,31];
 
 function parseMoeda(val) {
