@@ -2526,7 +2526,28 @@ function renderCalendarioMensal(ano, mes) {
   }
 
 
+  // ── Feriados nacionais fixos (dia/mês) + móveis calculados ──
+  const feriadosFixos = {
+    '1/1':'Confraternização Universal','21/4':'Tiradentes','1/5':'Dia do Trabalho',
+    '7/9':'Independência','12/10':'N.Sra.Aparecida','2/11':'Finados',
+    '15/11':'Proclamação da República','25/12':'Natal'
+  };
+  // Feriados móveis 2025 e 2026
+  const feriadosMoveis = {
+    '3/3/2025':'Carnaval','4/3/2025':'Carnaval','5/3/2025':'Quarta-feira de Cinzas',
+    '18/4/2025':'Sexta-feira Santa','20/6/2025':'Corpus Christi',
+    '16/2/2026':'Carnaval','17/2/2026':'Carnaval','18/2/2026':'Quarta-feira de Cinzas',
+    '3/4/2026':'Sexta-feira Santa','4/6/2026':'Corpus Christi',
+  };
+  const isFeriado = (d, m, a) => {
+    const chave1 = `${d}/${m+1}`;
+    const chave2 = `${d}/${m+1}/${a}`;
+    return feriadosFixos[chave1] || feriadosMoveis[chave2] || null;
+  };
+
   // ── Mapear ocupação ──
+  // ocup[chale][dia] pode ter: {tipo, canal, rb, entrada, saida}
+  // Para checkout+checkin no mesmo dia: {tipo:'duplo', saindo:{...}, entrando:{...}}
   const ocup = {};
   CHAL.forEach(c => { ocup[c] = {}; });
 
@@ -2535,50 +2556,53 @@ function renderCalendarioMensal(ano, mes) {
     const dtE = new Date(r.entrada + 'T12:00:00');
     const dtS = new Date(r.saida   + 'T12:00:00');
 
+    // Marcar noites ocupadas
     for (let d = 1; d <= diasNoMes; d++) {
       const dtD  = new Date(ano, mes, d, 12);
-      const noite = dtD >= dtE && dtD < dtS;
-      if (!noite) continue;
+      if (dtD < dtE || dtD >= dtS) continue; // não é noite desta reserva
 
-      // Já tem algo aqui? Só sobrescreve se for checkout (mais fraco)
-      if (ocup[r.chale][d] && ocup[r.chale][d].tipo !== 'checkout') continue;
+      const diaAnterior = new Date(ano, mes, d - 1, 12);
+      const isCheckin = diaAnterior < dtE; // ontem não estava nesta reserva
 
-      // É o primeiro dia ocupado desta reserva neste mês?
-      const diaAnterior = d > 1 ? new Date(ano, mes, d-1, 12) : null;
-      const anteriorOcupado = diaAnterior && diaAnterior >= dtE && diaAnterior < dtS;
-      const isCheckin = !anteriorOcupado; // primeiro dia da reserva visível no mês
-
-      ocup[r.chale][d] = {
-        tipo: isCheckin ? 'checkin' : 'ocupado',
-        canal: r.canal, rb: r.rb,
-        entrada: r.entrada, saida: r.saida,
-      };
+      const existente = ocup[r.chale][d];
+      if (!existente) {
+        ocup[r.chale][d] = { tipo: isCheckin ? 'checkin' : 'ocupado', canal: r.canal, rb: r.rb, entrada: r.entrada, saida: r.saida };
+      } else if (existente.tipo === 'checkout') {
+        // Checkout de reserva anterior + checkin desta → duplo
+        ocup[r.chale][d] = { tipo: 'duplo', saindo: existente, entrando: { canal: r.canal, rb: r.rb, entrada: r.entrada } };
+      }
+      // Não sobrescreve checkin/ocupado com outro (erro de dados)
     }
 
-    // Marcar dia de checkout (se cair neste mês)
+    // Marcar checkout
     if (dtS.getFullYear() === ano && dtS.getMonth() === mes) {
-      const dSaida = dtS.getDate();
-      if (!ocup[r.chale][dSaida]) {
-        ocup[r.chale][dSaida] = { tipo: 'checkout', canal: r.canal };
+      const dS = dtS.getDate();
+      const existente = ocup[r.chale][dS];
+      if (!existente) {
+        ocup[r.chale][dS] = { tipo: 'checkout', canal: r.canal };
+      } else if (existente.tipo === 'checkin' || existente.tipo === 'ocupado') {
+        // Checkin de nova reserva no mesmo dia de checkout → duplo
+        ocup[r.chale][dS] = { tipo: 'duplo', saindo: { canal: r.canal }, entrando: existente };
       }
     }
   });
 
-  // ── Métricas ──
+  // ── Métricas: FDS = noites Sex→Sáb (dow=5) e Sáb→Dom (dow=6) ──
   let ocupCells = 0, ocupFDS = 0, totalFDS = 0;
   CHAL.forEach(c => {
     for (let d = 1; d <= diasNoMes; d++) {
       const dow = new Date(ano, mes, d).getDay();
-      const isFDS = dow === 0 || dow === 6; // Dom ou Sáb
-      const ocup_d = ocup[c][d]?.tipo === 'ocupado' || ocup[c][d]?.tipo === 'checkin' || ocup[c][d]?.tipo === 'checkin_cont';
-      if (ocup_d) ocupCells++;
-      if (isFDS) { totalFDS++; if (ocup_d) ocupFDS++; }
+      const isFDS = dow === 5 || dow === 6; // Sex ou Sáb (noite que vai para Sáb ou Dom)
+      const t = ocup[c][d]?.tipo;
+      const ocupado = t === 'ocupado' || t === 'checkin' || t === 'duplo';
+      if (ocupado) ocupCells++;
+      if (isFDS) { totalFDS++; if (ocupado) ocupFDS++; }
     }
   });
   const totalCells = diasNoMes * CHAL.length;
-  const txOcup  = totalCells > 0 ? (ocupCells / totalCells * 100).toFixed(1) : '0.0';
-  const txFDS   = totalFDS   > 0 ? (ocupFDS   / totalFDS   * 100).toFixed(1) : '0.0';
-  const corFDS  = parseFloat(txFDS) >= parseFloat(txOcup) ? 'var(--green)' : 'var(--accent2)';
+  const txOcup = totalCells > 0 ? (ocupCells / totalCells * 100).toFixed(1) : '0.0';
+  const txFDS  = totalFDS   > 0 ? (ocupFDS   / totalFDS   * 100).toFixed(1) : '0.0';
+  const corFDS = parseFloat(txFDS) >= parseFloat(txOcup) ? 'var(--green)' : 'var(--accent2)';
 
   // ── Montar HTML ──
   const minW = Math.max(640, (diasNoMes + 1) * 34);
@@ -2588,58 +2612,90 @@ function renderCalendarioMensal(ano, mes) {
   html += `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;font-size:11px;color:var(--muted);margin-bottom:10px;">
     <span>Ocupação geral: <strong style="color:var(--text)">${txOcup}%</strong> <span style="opacity:.6">(${ocupCells}/${totalCells} noites)</span></span>
     <span style="border-left:1px solid var(--border);padding-left:16px;">
-      Fim de semana: <strong style="color:${corFDS}">${txFDS}%</strong> <span style="opacity:.6">(${ocupFDS}/${totalFDS} noites)</span>
+      Fim de semana: <strong style="color:${corFDS}">${txFDS}%</strong> <span style="opacity:.6">(${ocupFDS}/${totalFDS} noites Sex+Sáb)</span>
     </span>
-    <span style="border-left:1px solid var(--border);padding-left:16px;">${reservas.length} reservas no mês</span>
+    <span style="border-left:1px solid var(--border);padding-left:16px;">${reservas.length} reservas</span>
   </div>`;
 
-  // Grid — overflow no container interno para sticky funcionar
+  // Grid
   html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">`;
   html += `<div style="display:grid;grid-template-columns:90px repeat(${diasNoMes},minmax(24px,1fr));gap:2px;min-width:${minW}px;position:relative;">`;
 
-  // Cabeçalho: célula vazia sticky + dias
+  // Cabeçalho
   html += `<div style="position:sticky;left:0;z-index:3;background:var(--surf);"></div>`;
   for (let d = 1; d <= diasNoMes; d++) {
     const dow = new Date(ano, mes, d).getDay();
-    const fds = dow === 0 || dow === 6;
-    html += `<div style="text-align:center;padding-bottom:3px;">
-      <div style="font-size:8px;color:${fds?'var(--accent2)':'var(--muted)'};line-height:1.2;">${DS[dow]}</div>
-      <div style="font-size:10px;font-weight:${fds?700:400};color:${fds?'var(--accent2)':'var(--muted)'};">${d}</div>
+    const fds = dow === 5 || dow === 6;
+    const fer = isFeriado(d, mes, ano);
+    const cor = fer ? '#F0B429' : fds ? 'var(--accent2)' : 'var(--muted)';
+    const fw  = (fds || fer) ? 700 : 400;
+    html += `<div title="${fer||''}" style="text-align:center;padding-bottom:3px;${fer?'background:rgba(240,180,41,.06);border-radius:3px 3px 0 0;':''}">
+      <div style="font-size:8px;color:${cor};line-height:1.2;">${ ['D','S','T','Q','Q','S','S'][dow] }</div>
+      <div style="font-size:10px;font-weight:${fw};color:${cor};">${d}${fer?'*':''}</div>
     </div>`;
   }
 
   // Linhas por chalé
   CHAL.forEach(chale => {
     html += `<div style="position:sticky;left:0;z-index:2;background:var(--surf);font-size:11px;font-weight:500;color:var(--text);display:flex;align-items:center;padding-right:8px;white-space:nowrap;">${chale}</div>`;
+
     for (let d = 1; d <= diasNoMes; d++) {
       const info = ocup[chale][d];
       const dow  = new Date(ano, mes, d).getDay();
-      const fds  = dow === 0 || dow === 6;
-      let bg, brd, ico = '', tip = '';
+      const fds  = dow === 5 || dow === 6;
+      const fer  = isFeriado(d, mes, ano);
+
+      // Fundo da célula (destaque FDS e feriado)
+      const bgBase = fer
+        ? 'rgba(240,180,41,.08)'
+        : fds ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.015)';
+      const brdBase = fer
+        ? '1px solid rgba(240,180,41,.15)'
+        : `1px solid rgba(255,255,255,${fds?'.07':'.04'})`;
+
+      let cellHtml = '';
 
       if (!info || info.tipo === 'checkout') {
-        bg  = fds ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.02)';
-        brd = '1px solid rgba(255,255,255,.07)';
-        if (info?.tipo === 'checkout') {
-          ico = `<span style="font-size:8px;color:rgba(255,255,255,.3)">◀</span>`;
-          tip = `Check-out · ${chale}`;
-        }
+        const tip = info ? `◀ Check-out · ${chale}` : (fer ? fer : '');
+        const ico = info ? `<span style="font-size:8px;color:rgba(255,255,255,.25)">◀</span>` : '';
+        cellHtml = `<div title="${tip}" style="height:26px;border-radius:3px;background:${bgBase};border:${brdBase};display:flex;align-items:center;justify-content:center;">${ico}</div>`;
+
+      } else if (info.tipo === 'duplo') {
+        // Célula dividida na diagonal: esquerda=saindo, direita=entrando
+        const cS = COR_CANAL[info.saindo?.canal] || '#888';
+        const cE = COR_CANAL[info.entrando?.canal] || '#34C77B';
+        const tip = `◀ Saída (${info.saindo?.canal||''}) + ▶ Entrada (${info.entrando?.canal||''}) · ${chale}`;
+        cellHtml = `<div title="${tip}" style="height:26px;border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.1);display:flex;cursor:default;">
+          <div style="flex:1;background:${cS}55;display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:#fff;opacity:.7">◀</span></div>
+          <div style="width:1px;background:rgba(255,255,255,.15);"></div>
+          <div style="flex:1;background:${cE}99;display:flex;align-items:center;justify-content:center;"><span style="font-size:7px;color:#fff;opacity:.9">▶</span></div>
+        </div>`;
+
       } else {
-        // Ocupado ou checkin — mesma cor de fundo pelo canal
+        // Ocupado ou checkin
         const cor = COR_CANAL[info.canal] || '#34C77B';
-        bg  = cor + '70';
-        brd = `1px solid ${cor}AA`;
-        tip = `${info.tipo === 'checkin' ? '▶ Check-in' : 'Ocupado'} · ${chale} · ${info.canal||''}${info.rb ? ' · R$'+Math.round(info.rb) : ''}`;
-        if (info.tipo === 'checkin') {
-          ico = `<span style="font-size:9px;color:#fff;font-weight:700;line-height:1">▶</span>`;
-        }
+        const tip = `${info.tipo==='checkin'?'▶ Check-in':'Ocupado'} · ${chale} · ${info.canal||''}${info.rb?' · R$'+Math.round(info.rb):''}`;
+        const ico = info.tipo === 'checkin'
+          ? `<span style="font-size:9px;color:#fff;font-weight:700">▶</span>` : '';
+        cellHtml = `<div title="${tip}" style="height:26px;border-radius:3px;background:${cor}70;border:1px solid ${cor}AA;display:flex;align-items:center;justify-content:center;">${ico}</div>`;
       }
 
-      html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;">${ico}</div>`;
+      html += cellHtml;
     }
   });
 
-  html += `</div></div>`; // fecha grid + overflow wrapper
+  html += `</div></div>`;
+
+  // Nota de feriados do mês
+  const ferDoMes = [];
+  for (let d = 1; d <= diasNoMes; d++) {
+    const f = isFeriado(d, mes, ano);
+    if (f) ferDoMes.push(`${d}* ${f}`);
+  }
+  if (ferDoMes.length) {
+    html += `<div style="margin-top:10px;font-size:10px;color:var(--accent2);opacity:.7;">* Feriados: ${ferDoMes.join(' · ')}</div>`;
+  }
+
   grid.innerHTML = html;
 }
 
