@@ -2622,34 +2622,32 @@ function renderCalendarioMensal(ano, mes) {
       const info = ocup[chale][d];
       const dow  = new Date(ano, mes, d).getDay();
       const fds  = dow === 0 || dow === 6;
-      let bg, brd, tip = '';
+      let bg, brd, tip = '', ico = '';
 
       if (!info) {
+        // Livre
         bg  = fds ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.02)';
         brd = '1px solid rgba(255,255,255,.06)';
-      } else if (info.tipo === 'checkin') {
-        const c = COR_CANAL[info.canal] || '#34C77B';
-        bg  = c + 'EE'; brd = `2px solid ${c}`;
-        tip = `▶ Check-in · ${chale} · ${info.canal||''} · ${info.rb?'R$'+Math.round(info.rb):''}`;
-      } else if (info.tipo === 'checkin_cont') {
-        // Chegou antes do mês, primeiro dia visível
-        const c = COR_CANAL[info.canal] || '#34C77B';
-        bg  = c + '88'; brd = `1px dashed ${c}`;
-        tip = `Ocupado (entrou ${info.entrada}) · ${chale} · ${info.canal||''}`;
       } else if (info.tipo === 'checkout') {
-        bg  = 'rgba(255,255,255,.04)'; brd = '1px dashed rgba(255,255,255,.15)';
+        // Dia de saída — chalé vazio, só triângulo discreto
+        bg  = fds ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.02)';
+        brd = '1px solid rgba(255,255,255,.06)';
+        ico = `<span style="font-size:7px;opacity:.35;color:var(--muted)">◀</span>`;
         tip = `◀ Check-out · ${chale}`;
       } else {
+        // Ocupado (checkin, checkin_cont ou ocupado) — mesma cor de fundo pelo canal
         const c = COR_CANAL[info.canal] || '#34C77B';
-        bg  = c + '66'; brd = `1px solid ${c}AA`;
-        tip = `Ocupado · ${chale} · ${info.canal||''} · entrada ${info.entrada||''}`;
+        bg  = c + '66';
+        brd = `1px solid ${c}99`;
+        tip = `${chale} · ${info.canal||''} · entrada ${info.entrada||''}`;
+        if (info.tipo === 'checkin') {
+          ico = `<span style="font-size:8px;color:#fff;opacity:.9">▶</span>`;
+          tip = `▶ Check-in · ${chale} · ${info.canal||''} · ${info.rb ? 'R$'+Math.round(info.rb) : ''}`;
+        } else if (info.tipo === 'checkin_cont') {
+          ico = `<span style="font-size:7px;color:#fff;opacity:.5">▶</span>`;
+        }
       }
 
-      const ico = (info?.tipo === 'checkin')
-        ? `<span style="font-size:8px;opacity:.9">▶</span>`
-        : (info?.tipo === 'checkout')
-          ? `<span style="font-size:8px;opacity:.5">◀</span>`
-          : '';
       html += `<div title="${tip}" style="height:26px;border-radius:3px;background:${bg};border:${brd};display:flex;align-items:center;justify-content:center;color:#fff;">${ico}</div>`;
     }
   });
