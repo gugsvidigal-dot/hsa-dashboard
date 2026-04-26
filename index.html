@@ -2833,7 +2833,7 @@ function renderVendasMensal() {
 
   wrap.innerHTML=`
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px">
-    <img src="data:image/svg+xml,${encodeURIComponent(`<svg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'><rect x='4' y='8' width='40' height='36' rx='5' fill='%231E2330' stroke='%23E07B47' stroke-width='1.5'/><rect x='4' y='8' width='40' height='13' rx='5' fill='%23E07B47'/><rect x='4' y='15' width='40' height='6' fill='%23E07B47'/><rect x='15' y='4' width='3' height='8' rx='1.5' fill='%23E07B47'/><rect x='30' y='4' width='3' height='8' rx='1.5' fill='%23E07B47'/><text x='24' y='34' text-anchor='middle' font-family='Arial,sans-serif' font-size='12' font-weight='bold' fill='%23E07B47'>${MS[m].toUpperCase()}</text></svg>`)}" width="48" height="48" style="flex-shrink:0;">
+    <img id="cal-mes-icon" width="48" height="48" style="flex-shrink:0;" src="">
     <div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:22px">${ML[m]} 2026 vs ${ML[m]} 2025</div>
       <div style="font-size:12px;color:var(--muted)">${sem?'Sem reservas registradas neste mês':'Comparativo mensal · dados reais'}</div>
@@ -2872,6 +2872,23 @@ function renderVendasMensal() {
       </tr>`}).join('')}
     </table>
   </div>`;
+
+  // Setar ícone do calendário com mês dinâmico
+  requestAnimationFrame(() => {
+    const iconEl = document.getElementById('cal-mes-icon');
+    if (iconEl) {
+      const mesAbr = MS[m].toUpperCase();
+      const svg = '<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
+        + '<rect x="4" y="8" width="40" height="36" rx="5" fill="#1E2330" stroke="#E07B47" stroke-width="1.5"/>'
+        + '<rect x="4" y="8" width="40" height="13" rx="5" fill="#E07B47"/>'
+        + '<rect x="4" y="15" width="40" height="6" fill="#E07B47"/>'
+        + '<rect x="15" y="4" width="3" height="8" rx="1.5" fill="#E07B47"/>'
+        + '<rect x="30" y="4" width="3" height="8" rx="1.5" fill="#E07B47"/>'
+        + '<text x="24" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#E07B47">' + mesAbr + '</text>'
+        + '</svg>';
+      iconEl.src = 'data:image/svg+xml;base64,' + btoa(svg);
+    }
+  });
 
   setTimeout(()=>{
     const opts={responsive:true,maintainAspectRatio:false,
@@ -5866,21 +5883,21 @@ function calcularResultado() {
     const ML      = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const nMeses  = ano === 2025 ? 12 : Math.max(1, V.recBruta.filter(v => v > 0).length);
 
-    // Rec. Líq vem direto do Vendas_BD (já deduz Booking+Agência+Expedia)
+    // OTA = Booking + Agência + Expedia do BD_Gastos por mês
+    const otaBdGastosMes = (ano === 2025 ? window.OTA_MES_25 : window.OTA_MES_26) || Array(12).fill(0);
+
     const recBruta   = V.recBruta.slice(0, nMeses);
-    const recLiqVbd  = (V.recLiqVbd || V.recLiq).slice(0, nMeses).map(Math.round);
     const pagsMes    = (V.pagsMes || Array(12).fill(0)).slice(0, nMeses).map(Math.round);
 
-    // OTA implícito = Rec. Bruta - Rec. Líq(VBD) - PagS
-    const otaMes     = recBruta.map((rb, m) => Math.round(rb - recLiqVbd[m] - pagsMes[m]));
+    // Rec. Líq = Rec. Bruta - OTA(BD_Gastos) - PagS
+    const otaMes     = Array.from({length: nMeses}, (_, m) => Math.round(otaBdGastosMes[m] || 0));
+    const recLiq     = recBruta.map((rb, m) => Math.round(rb - otaMes[m] - pagsMes[m]));
 
-    // OPEX sem OTA = BD_Gastos OPEX - OTA (BD_Gastos já contém Booking+Agência+Expedia)
-    const otaBdGastosMes = (ano === 2025 ? window.OTA_MES_25 : window.OTA_MES_26) || Array(12).fill(0);
+    // OPEX sem OTA = BD_Gastos OPEX - OTA
     const opexSemOTA = Array.from({length: nMeses}, (_, m) =>
-      Math.round((ga.OPEX[m] || 0) - (otaBdGastosMes[m] || 0))
+      Math.round((ga.OPEX[m] || 0) - otaMes[m])
     );
 
-    const recLiq = recLiqVbd.map((rl, m) => rl - pagsMes[m]);
     // Resultado
     const res1 = recLiq.map((rl, m) => rl - opexSemOTA[m]);
     const res2 = res1.map((v, m)    => v  - (ga.CAPEX[m] || 0));
