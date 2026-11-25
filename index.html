@@ -4759,7 +4759,7 @@ function goView(v, btn){
   if(vEl) vEl.classList.remove('hidden');
   // Esconder footer global nas views com rodapé próprio
   const footer = document.querySelector('footer');
-  if(footer) footer.style.display = ['agenda','executivo'].includes(v) ? 'none' : '';
+  if(footer) footer.style.display = ['agenda','executivo','relatorio'].includes(v) ? 'none' : '';
   if(v==='2025')           render25();
   else if(v==='2026')      render26();
   else if(v==='comp')      renderComp();
@@ -11459,7 +11459,7 @@ window.addEventListener('load', () => {
   --rel-pos:#34C77B;--rel-neg:#F05252;--rel-gold:#F0B429;--rel-pine:#5FB38A;--rel-track:rgba(255,255,255,.07);--rel-c1:#5FB38A;--rel-c2:#5B8DEF;--rel-c3:#F0B429;
   font-size:16px;line-height:1.5;padding:18px 40px 60px;max-width:1240px;margin:0 auto;background:var(--r-bg);color:var(--r-text);font-family:var(--r-body)}
 #view-relatorio.rel-light{--r-bg:#F4F2EC;--r-surf:#FFFFFF;--r-surf2:#F8F6F0;--r-border:#E2DED2;--r-text:#1F2A22;--r-muted:#5F655C;--r-accent:#2E5A43;--r-accent2:#B8862F;--r-on-accent:#FFFFFF;--r-chip:#EEEBE2;--r-head:'Fraunces',Georgia,serif;--r-body:'Public Sans','Helvetica Neue',Arial,sans-serif;
-  --rel-pos:#2E7D4F;--rel-neg:#B5483B;--rel-gold:#B8862F;--rel-pine:#2E5A43;--rel-track:#ECE9E0;--rel-c1:#2E5A43;--rel-c2:#7FA08B;--rel-c3:#D9B26A;border-radius:18px;margin-top:14px;margin-bottom:24px}
+  --rel-pos:#2E7D4F;--rel-neg:#B5483B;--rel-gold:#B8862F;--rel-pine:#2E5A43;--rel-track:#ECE9E0;--rel-c1:#2E5A43;--rel-c2:#7FA08B;--rel-c3:#D9B26A;border-radius:18px;margin:14px auto 24px;width:calc(100% - 32px)}
 #view-relatorio.rel-light .rel-c.pos{background:#E3EFE6}#view-relatorio.rel-light .rel-c.neg{background:#F6E3E0}
 #view-relatorio *{box-sizing:border-box}
 #view-relatorio .rel-top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
@@ -11469,10 +11469,12 @@ window.addEventListener('load', () => {
 #view-relatorio .rel-upd{font-size:13px;color:var(--r-muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 #view-relatorio .rel-btn{font:inherit;font-size:14px;font-weight:600;background:var(--r-surf2);color:var(--r-text);border:1px solid var(--r-border);border-radius:999px;padding:7px 14px;cursor:pointer}
 #view-relatorio .rel-btn:hover{border-color:var(--r-accent)}
-#view-relatorio .rel-filter{background:var(--r-surf);border:1px solid var(--r-border);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto auto 1fr;gap:12px 22px;align-items:start;margin-bottom:10px}
+#view-relatorio .rel-filter{background:var(--r-surf);border:1px solid var(--r-border);border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-start;margin-bottom:10px}
+#view-relatorio .rel-filter>div{min-width:0}
+#view-relatorio .rel-filter>div:last-child{flex:1 1 560px}
 #view-relatorio .rel-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--r-muted);font-weight:600;margin-bottom:6px}
 #view-relatorio .rel-row{display:flex;flex-wrap:wrap;gap:6px}
-#view-relatorio .rel-mgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px}
+#view-relatorio .rel-mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
 #view-relatorio .rel-chip{font:inherit;font-size:14px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px solid var(--r-border);background:transparent;color:var(--r-text);cursor:pointer;min-width:0;position:relative}
 #view-relatorio .rel-mgrid .rel-chip{padding:7px 0}
 #view-relatorio .rel-chip[aria-pressed="true"]{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-on-accent)}
@@ -11543,7 +11545,7 @@ window.addEventListener('load', () => {
 #view-relatorio footer.rel-foot{font-size:13px;color:var(--r-muted);border-top:1px solid var(--r-border);padding-top:12px;margin-top:22px;display:block}
 @media (max-width:760px){
   #view-relatorio{padding:14px max(14px,env(safe-area-inset-left,0px)) 50px max(14px,env(safe-area-inset-right,0px));font-size:17px}
-  #view-relatorio .rel-filter{grid-template-columns:1fr}
+  #view-relatorio .rel-filter>div:last-child{flex-basis:100%}
   #view-relatorio .rel-mgrid{grid-template-columns:repeat(6,minmax(0,1fr))}
   #view-relatorio h1{font-size:30px}
   #view-relatorio section.rel-sec{padding:16px}
@@ -13587,7 +13589,7 @@ const relView = (() => {
       if(!L.length){ msg.textContent='Nenhum PDF na pasta "Gerencial/Relatórios" do Dropbox.'; return; }
       const pref=L.filter(e=>/complet/i.test(e.name)); const f=(pref.length?pref:L).sort((a,b)=>String(b.server_modified).localeCompare(String(a.server_modified)))[0];
       msg.textContent='Baixando '+f.name+'…';
-      const d=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:f.path_lower})}});
+      const d=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:f.id})}});
       if(!d.ok) throw new Error('Dropbox '+d.status);
       const blob=await d.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
       msg.textContent=f.name+' · atualizado em '+new Date(f.server_modified).toLocaleDateString('pt-BR');
