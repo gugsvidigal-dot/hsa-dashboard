@@ -13359,7 +13359,7 @@ const relView = (() => {
 <section class="rel-sec" id="rel-s-chales"><h2>Chalés</h2><p class="rel-lead">RevPAR (receita por diária disponível), do maior para o menor</p><div class="rel-wf" id="rel-chl"></div></section>
 <section class="rel-sec" id="rel-s-custos"><h2>Custos (OPEX)</h2><p class="rel-lead" id="rel-l-cus"></p><div class="rel-minis" id="rel-ck"></div><h3>Por grupo</h3><div class="rel-wf" id="rel-gl"></div></section>
 <section class="rel-sec" id="rel-s-invest"><h2>Investimentos e dívidas</h2><p class="rel-lead">CAPEX e FINEX no período</p><div class="rel-minis" id="rel-ik"></div><h3>Investimentos (CAPEX)</h3><div class="rel-wf" id="rel-cxl"></div><h3>Dívidas e juros (FINEX)</h3><div class="rel-wf" id="rel-fxl"></div></section>
-<section class="rel-sec" id="rel-s-util"><h2>Utilidades</h2><p class="rel-lead">Água, energia elétrica e gás · R$ e R$ por diária vendida</p><div class="rel-wf" id="rel-utl"></div><div class="rel-note">${esc(UTIL_NOTE)}</div></section>
+<section class="rel-sec" id="rel-s-util"><h2>Utilidades</h2><p class="rel-lead">Água, energia elétrica e gás · custo total da pousada e custo por diária vendida</p><div class="rel-wf" id="rel-utl"></div><div class="rel-note" id="rel-n-ut"></div><div class="rel-st" style="margin-top:8px">${esc(UTIL_NOTE)}</div></section>
 <section class="rel-sec rel-wide" id="rel-s-alertas"><h2>Pontos de atenção</h2><p class="rel-lead">Calculados automaticamente com os dados de hoje e o período escolhido</p><ul class="rel-list" id="rel-alerts"></ul></section>
 <section class="rel-sec" id="rel-s-metas"><h2>Metas</h2><p class="rel-lead" id="rel-l-met"></p><div class="rel-wf" id="rel-met"></div><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="metas">✏️ Editar metas</button></div><div id="rel-ed-metas"></div></section>
 <section class="rel-sec" id="rel-s-pri"><h2>Prioridades</h2><p class="rel-lead" id="rel-l-pri"></p><ul class="rel-list" id="rel-pri"></ul><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="pri">✏️ Editar prioridades</button></div><div id="rel-ed-pri"></div><div class="rel-st" id="rel-cfgmsg" role="status"></div></section>
@@ -13446,6 +13446,9 @@ const relView = (() => {
     const UL=[['Água','Água'],['Energia','Energia elétrica'],['Gás','Gás']];
     const uT=Math.max(1,...UL.map(([k])=>A.ut[k]||0));
     $('rel-utl').innerHTML=UL.map(([k,l])=>{const v=A.ut[k]||0;const b=B?(B.ut[k]||0):undefined;return row(l,mil(v),100*v/uT,'',B?small(v,b,false):'',`${rs(A.noites?v/A.noites:0)} por diária vendida`+(B&&B.noites?` · ${y-1}: ${rs((B.ut[k]||0)/B.noites)}`:''))}).join('');
+    { const ex=B&&B.noites&&A.noites?UL.map(([k,l])=>{const a=A.ut[k]||0,b=B.ut[k]||0;return {l,a,b,pa:a/A.noites,pb:b/B.noites};}).find(x=>x.b>0&&(x.a>x.b)!==(x.pa>x.pb)):null;
+      $('rel-n-ut').innerHTML='<b>Como ler:</b> o valor em R$ é o <b>custo total da pousada</b> no período. O valor <b>por diária vendida</b> divide esse total pelas diárias vendidas e mostra quanto cada hospedagem "carrega" do custo. Como parte do consumo não depende de hóspede (família do caseiro, equipe, obra, longa estadia), o total pode subir e o custo por diária cair quando as vendas crescem mais que a conta.'
+        +(ex?` <br><br><b>Exemplo:</b> ${esc(ex.l.toLowerCase())} ${ex.a>ex.b?'subiu':'caiu'} ${nf0.format(Math.abs(100*(ex.a-ex.b)/ex.b))}% no total, mas as diárias vendidas ${A.noites>=B.noites?'subiram':'caíram'} ${nf0.format(Math.abs(100*(A.noites-B.noites)/B.noites))}%; por isso o custo por diária ${ex.pa>ex.pb?'subiu':'caiu'} de ${rs(ex.pb)} para ${rs(ex.pa)}.`:''); }
     renderAlerts(A,B,y,ms); renderMetas(y,ms); renderPri();
     drawFilter();
     try{localStorage.setItem('hsa-rel-filtro',JSON.stringify(st))}catch(e){}
