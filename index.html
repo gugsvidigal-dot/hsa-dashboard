@@ -11585,7 +11585,7 @@ window.addEventListener('load', () => {
   <div class="rel-top">
     <div><div class="rel-eyebrow" id="rel-eb">Relatório de resultados</div><h1 id="rel-h1">Relatório de resultados</h1><p class="rel-sub" id="rel-hp"></p></div>
     <div class="rel-upd"><span id="rel-upd">Carregando dados…</span><button class="rel-btn" id="rel-refresh" type="button">↻ Atualizar dados</button>
-      <div class="rel-tools"><button class="rel-btn" id="rel-theme" type="button" aria-pressed="false">☀️ Visual claro</button><button class="rel-btn" id="rel-print" type="button">🖨️ Salvar esta tela em PDF</button><button class="rel-btn" id="rel-pdf" type="button">⬇️ Relatório completo (PDF)</button></div>
+      <div class="rel-tools"><button class="rel-btn" id="rel-theme" type="button" aria-pressed="false">☀️ Visual claro</button><button class="rel-btn" id="rel-pdf" type="button">⬇️ Relatório completo (PDF)</button></div>
       <span class="rel-pdfmsg" id="rel-pdfmsg" role="status"></span></div>
   </div>
   <div class="rel-filter" id="rel-filter">
@@ -13268,7 +13268,7 @@ const relView = (() => {
   // Configuração editável no painel (salva no Dropbox): metas mensais e prioridades
   const CFG_PATH = '/Monte Verde + TV/Gerencial/hsa_relatorio_config.json';
   const DEFAULT_CFG = {
-    metas: {"2027-01": {"occ": 17.1, "adr": 891, "bruta": 33804, "eb": 1351}, "2027-02": {"occ": 21.6, "adr": 917, "bruta": 39869, "eb": 6439}, "2027-03": {"occ": 18.7, "adr": 767, "bruta": 31853, "eb": -2908}, "2027-04": {"occ": 17.0, "adr": 1104, "bruta": 40408, "eb": 6726}, "2027-05": {"occ": 31.0, "adr": 1050, "bruta": 72517, "eb": 26640}, "2027-06": {"occ": 38.7, "adr": 1181, "bruta": 98337, "eb": 40145}, "2027-07": {"occ": 43.0, "adr": 1373, "bruta": 131381, "eb": 54209}, "2027-08": {"occ": 32.3, "adr": 1085, "bruta": 77920, "eb": 33765}, "2027-09": {"occ": 28.0, "adr": 974, "bruta": 58653, "eb": 17316}, "2027-10": {"occ": 28.3, "adr": 1105, "bruta": 69483, "eb": 27643}, "2027-11": {"occ": 29.8, "adr": 983, "bruta": 62995, "eb": 21434}, "2027-12": {"occ": 47.2, "adr": 1110, "bruta": 116463, "eb": 46017}},
+    metas: {"2027-01": {"occ": 15.4, "adr": 810, "bruta": 27673, "eb": -3238}, "2027-02": {"occ": 20.0, "adr": 834, "bruta": 33557, "eb": 1662}, "2027-03": {"occ": 17.0, "adr": 697, "bruta": 26374, "eb": -7026}, "2027-04": {"occ": 15.3, "adr": 1004, "bruta": 33065, "eb": 1229}, "2027-05": {"occ": 29.6, "adr": 955, "bruta": 62916, "eb": 19252}, "2027-06": {"occ": 37.4, "adr": 1074, "bruta": 86478, "eb": 30929}, "2027-07": {"occ": 41.8, "adr": 1248, "bruta": 116174, "eb": 42336}, "2027-08": {"occ": 30.9, "adr": 986, "bruta": 67784, "eb": 25951}, "2027-09": {"occ": 26.5, "adr": 885, "bruta": 50505, "eb": 11075}, "2027-10": {"occ": 26.8, "adr": 1005, "bruta": 59877, "eb": 20282}, "2027-11": {"occ": 28.3, "adr": 853, "bruta": 52019, "eb": 13192}, "2027-12": {"occ": 46.1, "adr": 963, "bruta": 98723, "eb": 32545}},  // cenário Base de Perspectivas 2027 (an3/metas.py)
     prioridades: [
       {t:'Vender dezembro e as festas', d:'Preços por chalé e campanha para ex-hóspedes, até 05/12.'},
       {t:'Ajustar as regras de preço', d:'Prêmio no fim de semana e feriado, última hora só com data vazia e piso de diária líquida.'},
@@ -13514,7 +13514,7 @@ const relView = (() => {
     if (which==='pri'){ novo.prioridades=[0,1,2,3,4].map(i=>({t:$('rel-pt-'+i).value.trim(),d:$('rel-pd-'+i).value.trim()})).filter(p=>p.t); }
     else { const Y=+$('rel-my').value; if(!(Y>2000)) return; novo.metas=novo.metas||{};
       MN.forEach((l,i)=>{const r={};let any=false;for(const f of ['occ','adr','bruta','eb']){const v=$(`rel-m-${i}-${f}`).value.replace(/\./g,'').replace(',','.').trim();if(v!==''&&isFinite(+v)){r[f]=+v;any=true;}}
-        if(any) novo.metas[key(Y,i+1)]=r; else delete novo.metas[key(Y,i+1)];}); }
+        if(any) novo.metas[key(Y,i+1)]=r; else delete novo.metas[key(Y,i+1)];}); novo.metasEditadas=true; }
     let quem=''; try{quem=JSON.parse(localStorage.getItem('hsa_auth')||'{}').nome||''}catch(e){}
     const t=new Date(); novo.atualizadoEm=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); novo.atualizadoPor=quem;
     msg.textContent='Salvando…';
@@ -13532,7 +13532,7 @@ const relView = (() => {
   }
   async function fetchCfg(){
     try{ const r=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:CFG_PATH})}});
-      if (r.status===409||r.status===404) return; if(!r.ok) return; const c=await r.json(); if(c&&typeof c==='object'){ CFG=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c); cfgFromFile=true; } }catch(e){}
+      if (r.status===409||r.status===404) return; if(!r.ok) return; const c=await r.json(); if(c&&typeof c==='object'){ const d=JSON.parse(JSON.stringify(DEFAULT_CFG)); CFG=Object.assign(d,c); if(!c.metasEditadas) CFG.metas=d.metas; cfgFromFile=true; } }catch(e){}
   }
   function drawFilter(){
     const y=st.y, L=lastMo(y), C=closedMo(y);
@@ -13597,7 +13597,6 @@ const relView = (() => {
   function open(){
     if (!wired){ wired=true; $('rel-filter').addEventListener('click',onFilter); $('rel-refresh').addEventListener('click',()=>load(true));
       $('rel-theme').addEventListener('click',()=>setTheme(!$('view-relatorio').classList.contains('rel-light')));
-      $('rel-print').addEventListener('click',()=>{ if(D) window.print(); });
       $('rel-pdf').addEventListener('click',baixarPdf);
       $('rel-body').addEventListener('click',onEdit);
       let t='escuro'; try{t=localStorage.getItem('hsa-rel-tema')||'escuro'}catch(e){} setTheme(t==='claro'); }
