@@ -13144,14 +13144,14 @@ const REL_MN = {Jan:1,Fev:2,Feb:2,Mar:3,Abr:4,Apr:4,Mai:5,May:5,Jun:6,Jul:7,Ago:
 const REL_GR = {
   'Pessoal':['Salários e Encargos','Segurança do Trabalho','Medicina do Trabalho','Uniformes'],
   'Diaristas':['Diaristas'], 'Massagista':['Massagista'], 'Café da manhã':['Café da Manhã'],
-  'Água, luz, gás e esgoto':['Água','Energia','Gás','Saneamento'],
-  'Manutenção e enxoval':['Manutenção','Enxoval','Utensílhos de Cozinha','Lavanderia','Jardim','Chalés','Serviços subcontratados'],
+  'Água, luz e gás':['Água','Energia','Gás'],
+  'Manutenção e enxoval':['Manutenção','Saneamento','Enxoval','Utensílhos de Cozinha','Lavanderia','Jardim','Chalés','Serviços subcontratados'],
   'Amenities e limpeza':['Amenities','Produtos de Limpeza','Pets'],
   'Sistemas e contabilidade':['Hsystem','Contabilidade','Internet e Telefonia','TV Aberta','TV Streaming','Website','Tarifas Bancárias'],
   'Impostos e taxas':['Impostos e Taxas'], 'Marketing':['Marketing'], 'Plano de saúde':['Plano de Saúde'],
   'Outros':['Cartão Crédito não identificado','Devolução Hospedagem','Transporte'] };
 const REL_OTA = ['Booking','Agência','Agencia','Expedia','EXPEDIA'];
-const REL_UT = ['Água','Energia','Gás','Saneamento'];
+const REL_UT = ['Água','Energia','Gás'];
 
 function relCompute(R, G){
   const f = v => { if (v === null || v === undefined || v === '' || typeof v === 'boolean') return 0; const n = Number(v); return isFinite(n) ? n : 0; };
@@ -13359,7 +13359,7 @@ const relView = (() => {
 <section class="rel-sec" id="rel-s-chales"><h2>Chalés</h2><p class="rel-lead">RevPAR (receita por diária disponível), do maior para o menor</p><div class="rel-wf" id="rel-chl"></div></section>
 <section class="rel-sec" id="rel-s-custos"><h2>Custos (OPEX)</h2><p class="rel-lead" id="rel-l-cus"></p><div class="rel-minis" id="rel-ck"></div><h3>Por grupo</h3><div class="rel-wf" id="rel-gl"></div></section>
 <section class="rel-sec" id="rel-s-invest"><h2>Investimentos e dívidas</h2><p class="rel-lead">CAPEX e FINEX no período</p><div class="rel-minis" id="rel-ik"></div><h3>Investimentos (CAPEX)</h3><div class="rel-wf" id="rel-cxl"></div><h3>Dívidas e juros (FINEX)</h3><div class="rel-wf" id="rel-fxl"></div></section>
-<section class="rel-sec" id="rel-s-util"><h2>Utilidades</h2><p class="rel-lead">Água, energia, gás e esgoto · R$ e R$ por diária vendida</p><div class="rel-wf" id="rel-utl"></div><div class="rel-note">${esc(UTIL_NOTE)}</div></section>
+<section class="rel-sec" id="rel-s-util"><h2>Utilidades</h2><p class="rel-lead">Água, energia elétrica e gás · R$ e R$ por diária vendida</p><div class="rel-wf" id="rel-utl"></div><div class="rel-note">${esc(UTIL_NOTE)}</div></section>
 <section class="rel-sec rel-wide" id="rel-s-alertas"><h2>Pontos de atenção</h2><p class="rel-lead">Calculados automaticamente com os dados de hoje e o período escolhido</p><ul class="rel-list" id="rel-alerts"></ul></section>
 <section class="rel-sec" id="rel-s-metas"><h2>Metas</h2><p class="rel-lead" id="rel-l-met"></p><div class="rel-wf" id="rel-met"></div><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="metas">✏️ Editar metas</button></div><div id="rel-ed-metas"></div></section>
 <section class="rel-sec" id="rel-s-pri"><h2>Prioridades</h2><p class="rel-lead" id="rel-l-pri"></p><ul class="rel-list" id="rel-pri"></ul><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="pri">✏️ Editar prioridades</button></div><div id="rel-ed-pri"></div><div class="rel-st" id="rel-cfgmsg" role="status"></div></section>
@@ -13443,7 +13443,7 @@ const relView = (() => {
     const lst=(o,ob)=>{const E=Object.entries(o).filter(([k,v])=>Math.abs(v)>=50).sort((p,q)=>q[1]-p[1]);const T=Math.max(1,...E.map(e=>Math.abs(e[1])));return E.length?E.map(([k,v])=>row(k,mil(v),100*Math.abs(v)/T,v<0?'r-pine':'',ob?small(v,ob[k]||0,false):'')).join(''):'<div class="rel-st">Nada no período.</div>'};
     $('rel-cxl').innerHTML=lst(A.cx,B?B.cx:null); $('rel-fxl').innerHTML=lst(A.fx,B?B.fx:null);
     // utilidades
-    const UL=[['Água','Água'],['Energia','Energia elétrica'],['Gás','Gás'],['Saneamento','Esgoto (saneamento)']];
+    const UL=[['Água','Água'],['Energia','Energia elétrica'],['Gás','Gás']];
     const uT=Math.max(1,...UL.map(([k])=>A.ut[k]||0));
     $('rel-utl').innerHTML=UL.map(([k,l])=>{const v=A.ut[k]||0;const b=B?(B.ut[k]||0):undefined;return row(l,mil(v),100*v/uT,'',B?small(v,b,false):'',`${rs(A.noites?v/A.noites:0)} por diária vendida`+(B&&B.noites?` · ${y-1}: ${rs((B.ut[k]||0)/B.noites)}`:''))}).join('');
     renderAlerts(A,B,y,ms); renderMetas(y,ms); renderPri();
