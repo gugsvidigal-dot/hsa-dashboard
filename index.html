@@ -542,6 +542,7 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   </div>
   <div class="header-nav">
     <div class="ptabs">
+      <button class="ptab"    id="ptab-relatorio"    onclick="goView('relatorio',this)">📑 Relatório</button>
       <button class="ptab"    id="ptab-resultado"    onclick="goView('resultado',this)">📈 Resultado</button>
       <button class="ptab"    id="ptab-vendas"       onclick="goView('vendas',this)">📊 Vendas</button>
       <button class="ptab"    id="ptab-gastos"       onclick="goView('gastos',this)">💰 Gastos</button>
@@ -550,9 +551,9 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
       <button class="ptab"    id="ptab-canais"       onclick="goView('canais',this)">📡 Canais</button>
       <button class="ptab"    id="ptab-concorrentes" onclick="goView('concorrentes',this)">🔍 Concorrentes</button>
       <button class="ptab"    id="ptab-agenda"        onclick="goView('agenda',this)">📅 Agenda Pgtos</button>
-      <button class="ptab"    id="ptab-executivo"     onclick="goView('executivo',this)">📊 Executivo</button>
-      <button class="ptab"    id="ptab-ainfs"         onclick="goView('ainfs',this)">🧾 AI NFs</button>
-      <button class="ptab"    id="ptab-aportes"      onclick="goView('aportes',this)">💰 Aportes</button>
+      <button class="ptab"    id="ptab-executivo" style="display:none"     onclick="goView('executivo',this)">📊 Executivo</button>
+      <button class="ptab"    id="ptab-ainfs" style="display:none"         onclick="goView('ainfs',this)">🧾 AI NFs</button>
+      <button class="ptab"    id="ptab-aportes" style="display:none"      onclick="goView('aportes',this)">💰 Aportes</button>
       <button class="ptab"    id="ptab-reserva"      onclick="goView('reserva',this);if(window.resCrud)resCrud.sincronizar();" style="background:linear-gradient(135deg,rgba(224,123,71,.25),rgba(240,180,41,.15));color:var(--accent);border:1px solid rgba(224,123,71,.3)">➕ Reserva</button>
     </div>
   </div>
@@ -4751,7 +4752,7 @@ function goView(v, btn){
       });
     });
   }
-  ['2025','2026','comp','vendas','resultado','aportes','chales','canais','concorrentes','reserva','gastos-bd','agenda','executivo','ainfs'].forEach(id=>{
+  ['2025','2026','comp','vendas','resultado','relatorio','aportes','chales','canais','concorrentes','reserva','gastos-bd','agenda','executivo','ainfs'].forEach(id=>{
     const el=document.getElementById('view-'+id); if(el) el.classList.add('hidden');
   });
   const vEl = document.getElementById('view-'+v);
@@ -4764,6 +4765,7 @@ function goView(v, btn){
   else if(v==='comp')      renderComp();
   else if(v==='vendas')    renderVendas();
   else if(v==='resultado') renderResultado();
+  else if(v==='relatorio') relView.open();
   else if(v==='aportes')   renderAportes();
   else if(v==='chales')    renderChales();
   else if(v==='canais')    renderCanais();
@@ -11450,6 +11452,153 @@ window.addEventListener('load', () => {
 <!-- ═══════════════════════════════════════════════════════ -->
 <!-- AGENDA DE PAGAMENTOS                                    -->
 <!-- ═══════════════════════════════════════════════════════ -->
+<!-- REL:START · Relatório de resultados (gerado a partir de hsa-relatorios/painel) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+#view-relatorio{--r-bg:transparent;--r-surf:var(--surf);--r-surf2:var(--surf2);--r-border:var(--border);--r-text:var(--text);--r-muted:var(--muted);--r-accent:var(--accent);--r-accent2:var(--accent2);--r-on-accent:#14161D;--r-chip:rgba(255,255,255,.08);--r-head:'Cormorant Garamond',Georgia,serif;--r-body:'Outfit',sans-serif;
+  --rel-pos:#34C77B;--rel-neg:#F05252;--rel-gold:#F0B429;--rel-pine:#5FB38A;--rel-track:rgba(255,255,255,.07);--rel-c1:#5FB38A;--rel-c2:#5B8DEF;--rel-c3:#F0B429;
+  font-size:16px;line-height:1.5;padding:18px 40px 60px;max-width:1240px;margin:0 auto;background:var(--r-bg);color:var(--r-text);font-family:var(--r-body)}
+#view-relatorio.rel-light{--r-bg:#F4F2EC;--r-surf:#FFFFFF;--r-surf2:#F8F6F0;--r-border:#E2DED2;--r-text:#1F2A22;--r-muted:#5F655C;--r-accent:#2E5A43;--r-accent2:#B8862F;--r-on-accent:#FFFFFF;--r-chip:#EEEBE2;--r-head:'Fraunces',Georgia,serif;--r-body:'Public Sans','Helvetica Neue',Arial,sans-serif;
+  --rel-pos:#2E7D4F;--rel-neg:#B5483B;--rel-gold:#B8862F;--rel-pine:#2E5A43;--rel-track:#ECE9E0;--rel-c1:#2E5A43;--rel-c2:#7FA08B;--rel-c3:#D9B26A;border-radius:18px;margin-top:14px;margin-bottom:24px}
+#view-relatorio.rel-light .rel-c.pos{background:#E3EFE6}#view-relatorio.rel-light .rel-c.neg{background:#F6E3E0}
+#view-relatorio *{box-sizing:border-box}
+#view-relatorio .rel-top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+#view-relatorio .rel-eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--r-accent2);font-weight:600}
+#view-relatorio h1{font-family:var(--r-head);font-weight:700;font-size:34px;line-height:1.1;margin:4px 0 6px;text-wrap:balance;color:var(--r-text)}
+#view-relatorio .rel-sub{color:var(--r-muted);font-size:15px;margin:0;max-width:70ch}
+#view-relatorio .rel-upd{font-size:13px;color:var(--r-muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#view-relatorio .rel-btn{font:inherit;font-size:14px;font-weight:600;background:var(--r-surf2);color:var(--r-text);border:1px solid var(--r-border);border-radius:999px;padding:7px 14px;cursor:pointer}
+#view-relatorio .rel-btn:hover{border-color:var(--r-accent)}
+#view-relatorio .rel-filter{background:var(--r-surf);border:1px solid var(--r-border);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto auto 1fr;gap:12px 22px;align-items:start;margin-bottom:10px}
+#view-relatorio .rel-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--r-muted);font-weight:600;margin-bottom:6px}
+#view-relatorio .rel-row{display:flex;flex-wrap:wrap;gap:6px}
+#view-relatorio .rel-mgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px}
+#view-relatorio .rel-chip{font:inherit;font-size:14px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px solid var(--r-border);background:transparent;color:var(--r-text);cursor:pointer;min-width:0;position:relative}
+#view-relatorio .rel-mgrid .rel-chip{padding:7px 0}
+#view-relatorio .rel-chip[aria-pressed="true"]{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-on-accent)}
+#view-relatorio .rel-chip:disabled{opacity:.25;cursor:default}
+#view-relatorio .rel-chip.open::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--r-accent2)}
+#view-relatorio .rel-chip:focus-visible,#view-relatorio .rel-btn:focus-visible{outline:2px solid var(--r-accent2);outline-offset:2px}
+#view-relatorio .rel-pnote{font-size:13px;color:var(--r-muted);margin:0 0 18px}
+#view-relatorio .rel-pnote b{color:var(--r-accent2);font-weight:600}
+#view-relatorio .rel-toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+#view-relatorio .rel-toc a{font-size:14px;color:var(--r-text);text-decoration:none;background:var(--r-surf);border:1px solid var(--r-border);border-radius:999px;padding:5px 12px}
+#view-relatorio .rel-toc a:hover{border-color:var(--r-accent)}
+#view-relatorio .rel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:20px;align-items:start}
+#view-relatorio section.rel-sec{background:var(--r-surf);border:1px solid var(--r-border);border-radius:16px;padding:20px;min-width:0;scroll-margin-top:150px}
+#view-relatorio section.rel-wide{grid-column:1/-1}
+#view-relatorio h2{font-family:var(--r-head);font-weight:700;font-size:27px;line-height:1.15;margin:0 0 2px;color:var(--r-text)}
+#view-relatorio h3{font-family:var(--r-head);font-weight:700;font-size:21px;margin:20px 0 8px;color:var(--r-text)}
+#view-relatorio .rel-lead{color:var(--r-muted);font-size:14px;margin:0 0 14px}
+#view-relatorio .rel-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+#view-relatorio .rel-card,#view-relatorio .rel-mini{background:var(--r-surf2);border:1px solid var(--r-border);border-radius:12px;padding:14px 16px;min-width:0}
+#view-relatorio .rel-kl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--r-muted);font-weight:600}
+#view-relatorio .rel-kv{font-family:var(--r-head);font-size:38px;font-weight:700;line-height:1.1;margin:4px 0 6px;font-variant-numeric:tabular-nums;color:var(--r-text)}
+#view-relatorio .rel-mv{font-family:var(--r-head);font-size:28px;font-weight:700;line-height:1.15;margin:2px 0 4px;font-variant-numeric:tabular-nums;color:var(--r-text)}
+#view-relatorio .rel-ks{font-size:14px;color:var(--r-muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#view-relatorio .rel-minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px}
+#view-relatorio .rel-c{display:inline-block;font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--r-chip);color:var(--r-text)}
+#view-relatorio .rel-c.pos{background:rgba(52,199,123,.15);color:var(--rel-pos)}
+#view-relatorio .rel-c.neg{background:rgba(240,82,82,.15);color:var(--rel-neg)}
+#view-relatorio .rel-wf{display:flex;flex-direction:column;gap:13px}
+#view-relatorio .rel-wl{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:16px}
+#view-relatorio .rel-wl span{min-width:0}
+#view-relatorio .rel-wl b{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+#view-relatorio .rel-wl small{font-size:13px;font-weight:700;margin-left:4px}
+#view-relatorio small.pos{color:var(--rel-pos)} #view-relatorio small.neg{color:var(--rel-neg)} #view-relatorio small.neu{color:var(--r-muted)}
+#view-relatorio .rel-st{font-size:13px;color:var(--r-muted);margin-top:1px}
+#view-relatorio .rel-tr{height:10px;background:var(--rel-track);border-radius:5px;margin-top:6px;overflow:hidden}
+#view-relatorio .rel-tr i{display:block;height:100%;border-radius:5px;background:var(--rel-neg);opacity:.75}
+#view-relatorio .r-tot .rel-tr i,#view-relatorio .r-pine .rel-tr i{background:var(--rel-pine);opacity:1}
+#view-relatorio .r-sub .rel-tr i{background:var(--rel-gold);opacity:1}
+#view-relatorio .r-sub .rel-wl{font-weight:700}
+#view-relatorio .r-sub{border-top:1px solid var(--r-border);padding-top:11px}
+#view-relatorio .rel-months{display:flex;flex-direction:column;gap:7px}
+#view-relatorio .rel-mrow{display:grid;grid-template-columns:40px 1fr 58px 52px;gap:8px;align-items:center;font-size:15px;font-variant-numeric:tabular-nums}
+#view-relatorio .rel-mrow.off{opacity:.3}
+#view-relatorio .rel-mhead{font-size:12px;color:var(--r-muted);text-transform:uppercase;letter-spacing:.06em}
+#view-relatorio .rel-mt{position:relative;height:16px}
+#view-relatorio .rel-mt .ax{position:absolute;left:50%;top:-4px;bottom:-4px;width:1px;background:var(--r-muted);opacity:.5}
+#view-relatorio .rel-mt i{position:absolute;top:0;height:100%;border-radius:4px}
+#view-relatorio .rel-mt i.p{background:var(--rel-pine)} #view-relatorio .rel-mt i.n{background:var(--rel-neg)}
+#view-relatorio .rel-mv1{text-align:right;font-weight:600}
+#view-relatorio .rel-mo{text-align:right;color:var(--r-muted);font-size:14px}
+#view-relatorio .rel-seg{display:flex;height:20px;border-radius:7px;overflow:hidden;gap:2px;margin:4px 0 10px}
+#view-relatorio .rel-seg i{display:block;height:100%}
+#view-relatorio .c1{background:var(--rel-c1)} #view-relatorio .c2{background:var(--rel-c2)} #view-relatorio .c3{background:var(--rel-c3)}
+#view-relatorio .rel-crow{display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:baseline;padding:8px 0;font-size:16px;border-bottom:1px solid var(--r-border)}
+#view-relatorio .rel-crow:last-child{border-bottom:0}
+#view-relatorio .rel-dot{width:12px;height:12px;border-radius:50%;align-self:center}
+#view-relatorio .rel-crow b{font-variant-numeric:tabular-nums}
+#view-relatorio .rel-crow .cd{grid-column:2/4;font-size:13px;color:var(--r-muted);margin-top:-4px}
+#view-relatorio .rel-note{background:var(--r-surf2);border:1px solid var(--r-border);border-radius:12px;padding:12px 14px;font-size:15px;margin-top:14px}
+#view-relatorio .rel-list{display:flex;flex-direction:column;gap:10px;margin:10px 0 0;padding:0;list-style:none}
+#view-relatorio .rel-list li{background:var(--r-surf2);border-radius:12px;padding:12px 14px;border:1px solid var(--r-border);border-left:4px solid var(--sev,var(--rel-gold))}
+#view-relatorio .rel-list li b{display:block;font-size:16px;margin-bottom:1px}
+#view-relatorio .rel-list li span{font-size:14px;color:var(--r-muted)}
+#view-relatorio .rel-list li.r{--sev:var(--rel-neg)} #view-relatorio .rel-list li.y{--sev:var(--rel-gold)}
+#view-relatorio .rel-static{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--r-accent2);font-weight:700}
+#view-relatorio .rel-load{padding:40px 0;color:var(--r-muted);text-align:center}
+#view-relatorio .rel-err{background:rgba(240,82,82,.12);border:1px solid rgba(240,82,82,.35);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+#view-relatorio footer.rel-foot{font-size:13px;color:var(--r-muted);border-top:1px solid var(--r-border);padding-top:12px;margin-top:22px;display:block}
+@media (max-width:760px){
+  #view-relatorio{padding:14px max(14px,env(safe-area-inset-left,0px)) 50px max(14px,env(safe-area-inset-right,0px));font-size:17px}
+  #view-relatorio .rel-filter{grid-template-columns:1fr}
+  #view-relatorio .rel-mgrid{grid-template-columns:repeat(6,minmax(0,1fr))}
+  #view-relatorio h1{font-size:30px}
+  #view-relatorio section.rel-sec{padding:16px}
+  #view-relatorio .rel-minis{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:no-preference){#view-relatorio .rel-tr i,#view-relatorio .rel-mt i,#view-relatorio .rel-seg i{transition:width .25s ease,left .25s ease}}
+#view-relatorio .rel-tools{display:flex;gap:8px;flex-wrap:wrap}
+#view-relatorio .rel-pdfmsg{font-size:13px;color:var(--r-muted);width:100%}
+#view-relatorio .rel-list li.g{--sev:var(--rel-pos)}
+#view-relatorio .rel-edrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+#view-relatorio .rel-ed{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+#view-relatorio .rel-edi{display:flex;flex-direction:column;gap:6px}
+#view-relatorio .rel-ed label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--r-muted);font-weight:600}
+#view-relatorio .rel-ed input,#view-relatorio .rel-ed textarea{font:inherit;font-size:15px;color:var(--r-text);background:var(--r-surf2);border:1px solid var(--r-border);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+#view-relatorio .rel-ed textarea{resize:vertical}
+#view-relatorio .rel-save{background:var(--r-accent);border-color:var(--r-accent);color:var(--r-on-accent)}
+#view-relatorio .rel-tbl{overflow-x:auto}
+#view-relatorio .rel-tbl table{border-collapse:collapse;width:100%;font-size:14px}
+#view-relatorio .rel-tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--r-muted);text-align:left;padding:4px}
+#view-relatorio .rel-tbl td{padding:3px 4px}
+#view-relatorio .rel-tbl td input{padding:6px 8px;font-size:14px;min-width:80px}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff!important;background-image:none!important}
+  body>*:not(#view-relatorio){display:none!important}
+  #view-relatorio{display:block!important;width:100%;max-width:none;margin:0;padding:0;border-radius:0;
+    --r-bg:#fff;--r-surf:#fff;--r-surf2:#F8F6F0;--r-border:#DDD8CB;--r-text:#1F2A22;--r-muted:#5F655C;--r-accent:#2E5A43;--r-accent2:#B8862F;--r-chip:#EEEBE2;
+    --rel-pos:#2E7D4F;--rel-neg:#B5483B;--rel-gold:#B8862F;--rel-pine:#2E5A43;--rel-track:#ECE9E0;--rel-c1:#2E5A43;--rel-c2:#7FA08B;--rel-c3:#D9B26A;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #view-relatorio .rel-filter,#view-relatorio .rel-toc,#view-relatorio .rel-upd button,#view-relatorio .rel-tools,#view-relatorio .rel-err,#view-relatorio .rel-edrow,#view-relatorio .rel-ed{display:none!important}
+  #view-relatorio .rel-grid{display:block}
+  #view-relatorio .rel-grid>section{margin-bottom:10px}
+  #view-relatorio .rel-kpis{grid-template-columns:repeat(4,1fr)}
+  #view-relatorio section.rel-sec{break-inside:auto;padding:12px}
+  #view-relatorio .rel-card,#view-relatorio .rel-mini,#view-relatorio .rel-wf>div,#view-relatorio .rel-list li,#view-relatorio .rel-note,#view-relatorio h2,#view-relatorio h3{break-inside:avoid}
+  #view-relatorio .rel-kv{font-size:28px}
+}
+</style>
+<div id="view-relatorio" class="hidden">
+  <div class="rel-top">
+    <div><div class="rel-eyebrow" id="rel-eb">Relatório de resultados</div><h1 id="rel-h1">Relatório de resultados</h1><p class="rel-sub" id="rel-hp"></p></div>
+    <div class="rel-upd"><span id="rel-upd">Carregando dados…</span><button class="rel-btn" id="rel-refresh" type="button">↻ Atualizar dados</button>
+      <div class="rel-tools"><button class="rel-btn" id="rel-theme" type="button" aria-pressed="false">☀️ Visual claro</button><button class="rel-btn" id="rel-print" type="button">🖨️ Salvar esta tela em PDF</button><button class="rel-btn" id="rel-pdf" type="button">⬇️ Relatório completo (PDF)</button></div>
+      <span class="rel-pdfmsg" id="rel-pdfmsg" role="status"></span></div>
+  </div>
+  <div class="rel-filter" id="rel-filter">
+    <div><div class="rel-lbl">Ano</div><div class="rel-row" id="rel-years"></div></div>
+    <div><div class="rel-lbl">Atalhos</div><div class="rel-row" id="rel-quick"></div></div>
+    <div><div class="rel-lbl">Meses · toque para marcar vários</div><div class="rel-mgrid" id="rel-months"></div></div>
+  </div>
+  <p class="rel-pnote" id="rel-pnote"></p>
+  <div id="rel-err"></div>
+  <nav class="rel-toc" aria-label="Capítulos do relatório"><a href="#rel-s-resumo">Resumo</a><a href="#rel-s-caixa">Caixa</a><a href="#rel-s-mes">Mês a mês</a><a href="#rel-s-receita">Receita</a><a href="#rel-s-canais">Canais</a><a href="#rel-s-chales">Chalés</a><a href="#rel-s-custos">Custos</a><a href="#rel-s-invest">Investimentos e dívidas</a><a href="#rel-s-util">Utilidades</a><a href="#rel-s-alertas">Atenção</a><a href="#rel-s-metas">Metas</a><a href="#rel-s-pri">Prioridades</a></nav>
+  <div id="rel-body"><div class="rel-load">Carregando reservas e gastos do Dropbox…</div></div>
+</div>
+<!-- REL:END -->
 <div id="view-agenda" class="hidden" style="padding:12px 10px;max-width:100%;box-sizing:border-box;display:flex;flex-direction:column;min-height:calc(100vh - 110px)">
 
   <!-- Alertas de vencimento próximo -->
@@ -12968,5 +13117,496 @@ function nfRenderTrend(){
   body.innerHTML = rows;
 }
 </script>
+<!-- REL-JS:START -->
+<script>
+// HSA · Relatório de resultados — cálculo (porta fiel de an3/calc3.py + lib.month)
+// Entrada: reservas (hsa_reservas.json) e gastos (hsa_gastos.json). Saída: dados por mês.
+// Regras completas em REGRAS.md (repositório hsa-relatorios).
+const REL_CFG = {
+  // pousada fechada: noites fechadas por mês (o Monviso seguiu ocupado pela longa estadia)
+  closed: { '2026-08': 7, '2026-09': 1, '2026-11': 2 },
+  // Booking sem fatura: estimativa de comissão sobre o valor da reserva
+  bookingCut: '2026-07-16', bookingOld: 0.21, bookingNew: 0.23,
+  firstYear: 2025,
+};
+function relUH(m){ return m >= '2026-06' ? 7 : (m >= '2025-04' ? 6 : 5); }
+function relAvail(c, y, mo){
+  const m = y + '-' + String(mo).padStart(2,'0');
+  if (c === 'Everest' && m < '2025-04') return 0;
+  if (c === 'Chamonix' && m < '2026-06') return 0;
+  const d = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  return d - (c === 'Monviso' ? 0 : (REL_CFG.closed[m] || 0));
+}
+const REL_OK = ['Concluída','Confirmada e Paga Parcial','Concluída - ag. Pgto agência','Confirmada e Paga 100%','Confirmada e Não Paga','Confirmada e CC inválido','Concluída - No Show','Em cotação','Cancelada - Retido'];
+const REL_MN = {Jan:1,Fev:2,Feb:2,Mar:3,Abr:4,Apr:4,Mai:5,May:5,Jun:6,Jul:7,Ago:8,Aug:8,Set:9,Sep:9,Out:10,Oct:10,Nov:11,Dez:12,Dec:12};
+const REL_GR = {
+  'Pessoal':['Salários e Encargos','Segurança do Trabalho','Medicina do Trabalho','Uniformes'],
+  'Diaristas':['Diaristas'], 'Massagista':['Massagista'], 'Café da manhã':['Café da Manhã'],
+  'Água, luz, gás e esgoto':['Água','Energia','Gás','Saneamento'],
+  'Manutenção e enxoval':['Manutenção','Enxoval','Utensílhos de Cozinha','Lavanderia','Jardim','Chalés','Serviços subcontratados'],
+  'Amenities e limpeza':['Amenities','Produtos de Limpeza','Pets'],
+  'Sistemas e contabilidade':['Hsystem','Contabilidade','Internet e Telefonia','TV Aberta','TV Streaming','Website','Tarifas Bancárias'],
+  'Impostos e taxas':['Impostos e Taxas'], 'Marketing':['Marketing'], 'Plano de saúde':['Plano de Saúde'],
+  'Outros':['Cartão Crédito não identificado','Devolução Hospedagem','Transporte'] };
+const REL_OTA = ['Booking','Agência','Agencia','Expedia','EXPEDIA'];
+const REL_UT = ['Água','Energia','Gás','Saneamento'];
+
+function relCompute(R, G){
+  const f = v => { if (v === null || v === undefined || v === '' || typeof v === 'boolean') return 0; const n = Number(v); return isFinite(n) ? n : 0; };
+  const pm = s => { s = String(s || '').trim(); const m = s.match(/^([A-Za-zÀ-ú]{3})[-/](\d{2,4})$/); if (m && REL_MN[m[1]]) { let a = +m[2]; if (a < 100) a += 2000; return a + '-' + String(REL_MN[m[1]]).padStart(2,'0'); } return null; };
+  const canal = o => { o = String(o || '').toUpperCase(); if (o.includes('BOOKING')) return 'Booking'; if (o.includes('EXPEDIA')) return 'Agências'; if (o.startsWith('HBOOK')) return 'Direto';
+    if (['AGENCIA','AGÊNCIA','CVC','VOOTUR','INCOMUM','BESTBUY','WEST','ORINTER'].some(x => o.includes(x))) return 'Agências'; return 'Direto'; };
+  // meses: do primeiro ano até o mês corrente
+  const now = new Date(); const curM = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const MONTHS = []; for (let y = REL_CFG.firstYear; y <= now.getFullYear(); y++) for (let i = 1; i <= 12; i++) { const m = y + '-' + String(i).padStart(2,'0'); if (m <= curM) MONTHS.push(m); }
+  const Z = () => ({bruta:0,hosp:0,extras:0,pags:0,commB:0,commA:0,noites:0,estadias:0,desc:0,tabela:0,longa_n:0,longa_h:0,ch:{},cn:{}});
+  const res = {}; MONTHS.forEach(m => res[m] = Z());
+  const add = (o,k,v) => { o[k] = (o[k] || 0) + v; };
+  for (const x of R){
+    const st = x.status; if (!REL_OK.includes(st)) continue;
+    const ref = pm(x.mesano);
+    if (st === 'Cancelada - Retido'){
+      const rb = f(x.vRetidoHosp) + f(x.vRetidoExtras);
+      if (rb > 0 && res[ref]){ res[ref].bruta += rb; res[ref].hosp += rb; res[ref].pags += Math.abs(f(x.vRetidoPagS)); }
+      continue;
+    }
+    const c = canal(x.origem), ag = c === 'Agências';
+    const commA = ag ? Math.abs(f(x.commAgencia || x.descAgencia)) : 0;
+    const rh = f(x.rbHosp || x.vReserva || x.recBruta) + commA;
+    const rx = f(x.rbExtras || x.totalExtras);
+    if (rh + rx <= 0) continue;
+    let commB = 0;
+    if (c === 'Booking'){ const base = f(x.vReserva) || f(x.rbHosp);
+      commB = String(x.dataReserva || '') >= REL_CFG.bookingCut ? base*REL_CFG.bookingNew : (Math.abs(f(x.bookingComm)) || base*REL_CFG.bookingOld); }
+    const noshow = st === 'Concluída - No Show';
+    let n = 0, a = null, b = null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(x.entrada||'')) && /^\d{4}-\d{2}-\d{2}$/.test(String(x.saida||''))){
+      a = Date.UTC(+x.entrada.slice(0,4), +x.entrada.slice(5,7)-1, +x.entrada.slice(8,10));
+      b = Date.UTC(+x.saida.slice(0,4), +x.saida.slice(5,7)-1, +x.saida.slice(8,10));
+      n = Math.round((b - a)/864e5);
+    }
+    let buckets = {};
+    if (n <= 0){ if (ref) buckets[ref] = 1; }
+    else {
+      for (let d = a; d < b; d += 864e5){ const dt = new Date(d); const k = dt.getUTCFullYear() + '-' + String(dt.getUTCMonth()+1).padStart(2,'0'); buckets[k] = (buckets[k]||0) + 1; }
+      for (const k in buckets) buckets[k] /= n;
+      const em = x.entrada.slice(0,7);
+      if (res[em] && !noshow){ res[em].estadias += 1; res[em].desc += f(x.totalDesc) - commA; res[em].tabela += f(x.vTabela); }
+    }
+    const pg = Math.abs(f(x.pags));
+    const longa = x.chale === 'Monviso' && String(x.hospede || '').includes('Salles');
+    for (const m in buckets){
+      const p = buckets[m], r_ = res[m]; if (!r_) continue;
+      r_.bruta += (rh+rx)*p; r_.hosp += rh*p; r_.extras += rx*p; r_.pags += pg*p; r_.commB += commB*p; r_.commA += commA*p;
+      const k = n > 0 ? n*p : 0;
+      if (!noshow) r_.noites += k;
+      const chv = r_.ch[x.chale] || (r_.ch[x.chale] = [0,0]); chv[1] += rh*p; if (!noshow) chv[0] += k;
+      const cnv = r_.cn[c] || (r_.cn[c] = [0,0,0]); cnv[1] += rh*p; cnv[2] += (commB+commA)*p; if (!noshow) cnv[0] += k;
+      if (longa){ r_.longa_n += k; r_.longa_h += rh*p; }
+    }
+  }
+  const cat2g = {}; for (const g in REL_GR) for (const c of REL_GR[g]) cat2g[c] = g;
+  const exp = {}; MONTHS.forEach(m => exp[m] = {simples:0,ota_real:0,opex:0,capex:0,finex:0,g:{},cx:{},fx:{},ut:{}});
+  for (const r of G){
+    const d = String(r.data || r.dataPgto || ''); const m = d.slice(0,7);
+    const t = r.tipo, v = f(r.valor), c = String(r.categoria ?? '').trim();
+    if (t === 'OPEX' && c === 'Impostos e Taxas' && String(r.subcat1 ?? '').includes('imples')){ if (exp[m]) exp[m].simples += v; continue; }
+    const e = exp[m]; if (!e) continue;
+    if (t === 'OPEX'){
+      if (REL_OTA.includes(c)){ e.ota_real += v; continue; }
+      const g = cat2g[c] || 'Outros';
+      e.opex += v; add(e.g, g, v); if (REL_UT.includes(c)) add(e.ut, c, v);
+    } else if (t === 'CAPEX'){ e.capex += v; add(e.cx, c, v); }
+    else if (t === 'FINEX'){ e.finex += v; add(e.fx, c, v); }
+  }
+  const D = {};
+  for (const m of MONTHS){
+    const a = res[m], e = exp[m]; const y = +m.slice(0,4), mo = +m.slice(5,7);
+    const days = new Date(Date.UTC(y, mo, 0)).getUTCDate(), u = relUH(m);
+    const cap = u*days - (u-1)*(REL_CFG.closed[m] || 0);
+    const ota = (Math.abs(e.ota_real) > 0.5 ? e.ota_real : a.commB) + a.commA;
+    const ch = {};
+    for (const c of ['Charmey','Chamonix','Cheverny','Everest','Martigny','Monblanc','Monviso']){ const av = relAvail(c, y, mo); if (av) ch[c] = [Math.round((a.ch[c]||[0,0])[0]), (a.ch[c]||[0,0])[1], av]; }
+    const cn = {}; for (const c of ['Direto','Booking','Agências']) cn[c] = a.cn[c] || [0,0,0];
+    D[m] = { bruta:a.bruta, hosp:a.hosp, extras:a.extras, simples:e.simples, ota, pags:a.pags, opex:e.opex, capex:e.capex, finex:e.finex,
+      noites:Math.round(a.noites), cap, estadias:a.estadias, desc:a.desc, tabela:a.tabela, longa_n:Math.round(a.longa_n), longa_h:a.longa_h,
+      ota_est: Math.abs(e.ota_real) > 0.5 ? 0 : a.commB,
+      g:e.g, cx:e.cx, fx:e.fx, ch, cn, ut:e.ut };
+  }
+  return D;
+}
+
+// Ritmo de reservas: diárias já reservadas para os próximos meses × mesmo ponto do ano anterior
+function relPace(R, today, nMonths=2){
+  const OKP = REL_OK.filter(s => s !== 'Cancelada - Retido');
+  const t = today || new Date();
+  const iso = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const asof = iso(t), asofPrev = (t.getFullYear()-1)+asof.slice(4);
+  const out = [];
+  for (let k = 1; k <= nMonths; k++){
+    const d = new Date(t.getFullYear(), t.getMonth()+k, 1);
+    const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), mp = (d.getFullYear()-1)+m.slice(4);
+    out.push({ m, mp, asof, asofPrev, cur:0, prev:0 });
+  }
+  for (const x of R){
+    if (!OKP.includes(x.status)) continue;
+    const dr = String(x.dataReserva || '').slice(0,10); if (!dr) continue;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(x.entrada||'')) || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.saida||''))) continue;
+    const a = Date.UTC(+x.entrada.slice(0,4), +x.entrada.slice(5,7)-1, +x.entrada.slice(8,10)), b = Date.UTC(+x.saida.slice(0,4), +x.saida.slice(5,7)-1, +x.saida.slice(8,10));
+    for (let d = a; d < b; d += 864e5){
+      const dt = new Date(d); const k = dt.getUTCFullYear()+'-'+String(dt.getUTCMonth()+1).padStart(2,'0');
+      for (const p of out){ if (k === p.m && dr <= p.asof) p.cur++; if (k === p.mp && dr <= p.asofPrev) p.prev++; }
+    }
+  }
+  return out;
+}
+
+
+// HSA · Relatório de resultados — tela no painel (usa relCompute de rel_calc.js)
+const relView = (() => {
+  const MN = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  // Configuração editável no painel (salva no Dropbox): metas mensais e prioridades
+  const CFG_PATH = '/Monte Verde + TV/Gerencial/hsa_relatorio_config.json';
+  const DEFAULT_CFG = {
+    metas: {"2027-01": {"occ": 17.1, "adr": 891, "bruta": 33804, "eb": 1351}, "2027-02": {"occ": 21.6, "adr": 917, "bruta": 39869, "eb": 6439}, "2027-03": {"occ": 18.7, "adr": 767, "bruta": 31853, "eb": -2908}, "2027-04": {"occ": 17.0, "adr": 1104, "bruta": 40408, "eb": 6726}, "2027-05": {"occ": 31.0, "adr": 1050, "bruta": 72517, "eb": 26640}, "2027-06": {"occ": 38.7, "adr": 1181, "bruta": 98337, "eb": 40145}, "2027-07": {"occ": 43.0, "adr": 1373, "bruta": 131381, "eb": 54209}, "2027-08": {"occ": 32.3, "adr": 1085, "bruta": 77920, "eb": 33765}, "2027-09": {"occ": 28.0, "adr": 974, "bruta": 58653, "eb": 17316}, "2027-10": {"occ": 28.3, "adr": 1105, "bruta": 69483, "eb": 27643}, "2027-11": {"occ": 29.8, "adr": 983, "bruta": 62995, "eb": 21434}, "2027-12": {"occ": 47.2, "adr": 1110, "bruta": 116463, "eb": 46017}},
+    prioridades: [
+      {t:'Vender dezembro e as festas', d:'Preços por chalé e campanha para ex-hóspedes, até 05/12.'},
+      {t:'Ajustar as regras de preço', d:'Prêmio no fim de semana e feriado, última hora só com data vazia e piso de diária líquida.'},
+      {t:'Reduzir o FINEX e priorizar segurança', d:'Renegociar o capital de giro mais caro; deck da piscina, fossa e câmeras antes da alta temporada.'}],
+    atualizadoEm: '2026-11-25', atualizadoPor: 'Claude (versão inicial)'
+  };
+  // Limites dos alertas automáticos
+  const ALERT = { pace: 0.70, paceMin: 5, finex: 0.50, custo: 0.20, custoMin: 2000, diaria: -3, margem: 10, ocup: -3 };
+  const UTIL_NOTE = 'Energia solar desde abr/26: a conta de luz cai, e a parcela do financiamento vai para o CAPEX.';
+  const nf0 = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}), nf1 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+  const sg = v => v < 0 ? '−' : '';
+  const mil = v => sg(v)+'R$ '+nf1.format(Math.abs(v)/1000)+' mil';
+  const m1 = v => sg(v)+nf1.format(Math.abs(v)/1000);
+  const rs = v => sg(v)+'R$ '+nf0.format(Math.abs(v));
+  const pc = (v,d=0) => sg(v)+(d?nf1:nf0).format(Math.abs(v))+'%';
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const $ = id => document.getElementById(id);
+  let D = null, loadedAt = 0, loading = false, st = null, PACE = [], CFG = JSON.parse(JSON.stringify(DEFAULT_CFG)), cfgFromFile = false, editing = null;
+  const now = () => new Date();
+  const curY = () => now().getFullYear(), curMo = () => now().getMonth()+1;
+  const years = () => { const ys = new Set(Object.keys(D||{}).map(k => +k.slice(0,4))); return [...ys].sort((a,b)=>b-a); };
+  const lastMo = y => y < curY() ? 12 : curMo();          // último mês com dados
+  const closedMo = y => y < curY() ? 12 : curMo()-1;      // último mês fechado (o corrente fica em aberto)
+  const isOpen = (y,m) => y === curY() && m === curMo();
+  const key = (y,m) => y+'-'+String(m).padStart(2,'0');
+  function defState(){
+    let y = curY(); if (closedMo(y) < 1) y = y-1;
+    return { y, ms: [...Array(closedMo(y)).keys()].map(i=>i+1) };
+  }
+  function loadState(){
+    try { const s = JSON.parse(localStorage.getItem('hsa-rel-filtro')||'null');
+      if (s && years().includes(s.y) && Array.isArray(s.ms)) { const ms = s.ms.filter(m => m>=1 && m<=lastMo(s.y)); if (ms.length) return { y:s.y, ms }; } } catch(e){}
+    return defState();
+  }
+  function agg(y, ms){
+    const A = {bruta:0,hosp:0,extras:0,simples:0,ota:0,pags:0,opex:0,capex:0,finex:0,noites:0,cap:0,estadias:0,desc:0,tabela:0,longa_n:0,longa_h:0,ota_est:0,g:{},cx:{},fx:{},ch:{},cn:{},ut:{}};
+    let n = 0;
+    for (const m of ms){ const r = D[key(y,m)]; if (!r) continue; n++;
+      for (const k of ['bruta','hosp','extras','simples','ota','pags','opex','capex','finex','noites','cap','estadias','desc','tabela','longa_n','longa_h','ota_est']) A[k] += r[k];
+      for (const t of ['g','cx','fx','ut']) for (const k in r[t]) A[t][k] = (A[t][k]||0) + r[t][k];
+      for (const t of ['ch','cn']) for (const k in r[t]){ const a = A[t][k] || (A[t][k] = r[t][k].map(()=>0)); r[t][k].forEach((v,i)=>a[i]+=v); }
+    }
+    if (!n) return null;
+    A.rl = A.bruta-A.simples; A.cv = A.ota+A.pags; A.eb = A.rl-A.cv-A.opex; A.fin = A.eb-A.capex-A.finex;
+    A.mg = A.rl ? 100*A.eb/A.rl : 0; A.occ = A.cap ? 100*A.noites/A.cap : 0; A.adr = A.noites ? A.hosp/A.noites : 0; A.rev = A.cap ? A.hosp/A.cap : 0;
+    A.adrsl = (A.noites-A.longa_n) > 0 ? (A.hosp-A.longa_h)/(A.noites-A.longa_n) : 0; A.los = A.estadias ? A.noites/A.estadias : 0; A.descp = A.tabela ? 100*A.desc/A.tabela : 0;
+    const sh = A.bruta ? A.hosp/A.bruta : 0; A.revliq = A.cap ? (A.hosp-(A.simples+A.cv)*sh)/A.cap : 0; A.eq = A.cap ? A.opex/A.cap : 0; A.cpd = A.noites ? A.opex/A.noites : 0;
+    return A;
+  }
+  const vr = (a,b) => b ? 100*(a-b)/Math.abs(b) : null;
+  function chip(a,b,good=true,mode='pct'){
+    if (b===undefined||b===null) return '';
+    if (mode==='pp'){ const d=a-b; const ok=(d>=0)===good; return `<span class="rel-c ${Math.abs(d)<0.5?'':(ok?'pos':'neg')}">${d>=0?'+':'−'}${nf0.format(Math.abs(d))} p.p.</span>`; }
+    if (mode==='x'){ if (b<=0&&a>0) return '<span class="rel-c pos">virou positivo</span>';
+      if (b>0&&a/b>=2) return `<span class="rel-c ${good?'pos':'neg'}">${nf1.format(a/b)}×</span>`;
+      if (b<0){ const d=a-b; return `<span class="rel-c ${(d>=0)===good?'pos':'neg'}">${d>=0?'+':'−'}${mil(Math.abs(d))}</span>`; } }
+    const v = vr(a,b); if (v===null) return '';
+    if (Math.abs(v)<0.5) return '<span class="rel-c">estável</span>';
+    const ok=(v>=0)===good; return `<span class="rel-c ${ok?'pos':'neg'}">${v>=0?'+':'−'}${nf0.format(Math.abs(v))}%</span>`;
+  }
+  function small(a,b,good=false){
+    if (b===undefined||b===null) return ''; if (!b) return a?'<small class="neu">novo</small>':'';
+    if (b>0&&a/b>=3) return `<small class="${good?'pos':'neg'}">${nf0.format(a/b)}×</small>`;
+    const v=vr(a,b); if (Math.abs(v)<0.5) return '<small class="neu">estável</small>';
+    const ok=(v>=0)===good; return `<small class="${ok?'pos':'neg'}">${v>=0?'+':'−'}${nf0.format(Math.abs(v))}%</small>`;
+  }
+  function plabel(y, ms){
+    const s=[...ms].sort((a,b)=>a-b), L=lastMo(y), C=closedMo(y);
+    const contig=s.every((m,i)=>!i||m===s[i-1]+1);
+    if (s.length===12) return 'Ano '+y;
+    if (contig && s[0]===1 && s.length===C) return 'Jan–'+MN[C-1].toLowerCase()+' '+y;
+    const q=[[1,2,3],[4,5,6],[7,8,9],[10,11,12]].findIndex(Q=>Q.length===s.length&&Q.every((m,i)=>m===s[i]));
+    if (q>=0) return `${q+1}º trimestre ${y}`;
+    if (s.length===1) return MN[s[0]-1]+' '+y;
+    if (contig) return MN[s[0]-1]+'–'+MN[s[s.length-1]-1].toLowerCase()+' '+y;
+    return s.map(m=>MN[m-1]).join(', ')+' '+y;
+  }
+  const bar = w => `<div class="rel-tr"><i style="width:${Math.max(0.8,Math.min(100,w)).toFixed(1)}%"></i></div>`;
+  const row = (label,val,w,cls,extra='',sub='') => `<div class="${cls}"><div class="rel-wl"><span>${esc(label)}</span><b>${val}${extra}</b></div>${sub?`<div class="rel-st">${sub}</div>`:''}${bar(w)}</div>`;
+  const BODY = `<div class="rel-grid">
+<section class="rel-sec rel-wide" id="rel-s-resumo"><h2>Resumo</h2><p class="rel-lead" id="rel-l-res"></p><div class="rel-kpis" id="rel-kpis"></div></section>
+<section class="rel-sec" id="rel-s-caixa"><h2>Do faturamento ao caixa</h2><p class="rel-lead">Em R$ mil, no período escolhido</p><div class="rel-wf" id="rel-wf"></div><div class="rel-note" id="rel-n-caixa"></div></section>
+<section class="rel-sec" id="rel-s-mes"><h2>Mês a mês</h2><p class="rel-lead">Resultado operacional, R$ mil. Meses fora do filtro ficam apagados.</p><div class="rel-months" id="rel-mm"></div><div class="rel-minis" style="margin-top:14px" id="rel-mg"></div></section>
+<section class="rel-sec" id="rel-s-receita"><h2>Receita e ocupação</h2><p class="rel-lead" id="rel-l-rec"></p><div class="rel-minis" id="rel-rk"></div><h3>Ponto de equilíbrio</h3><div class="rel-wf" id="rel-eq"></div><div class="rel-note" id="rel-n-eq"></div></section>
+<section class="rel-sec" id="rel-s-canais"><h2>Canais</h2><p class="rel-lead">Participação nas diárias vendidas</p><div class="rel-seg" id="rel-cseg"></div><div id="rel-cl"></div><div class="rel-note" id="rel-n-can"></div></section>
+<section class="rel-sec" id="rel-s-chales"><h2>Chalés</h2><p class="rel-lead">RevPAR (receita por diária disponível), do maior para o menor</p><div class="rel-wf" id="rel-chl"></div></section>
+<section class="rel-sec" id="rel-s-custos"><h2>Custos (OPEX)</h2><p class="rel-lead" id="rel-l-cus"></p><div class="rel-minis" id="rel-ck"></div><h3>Por grupo</h3><div class="rel-wf" id="rel-gl"></div></section>
+<section class="rel-sec" id="rel-s-invest"><h2>Investimentos e dívidas</h2><p class="rel-lead">CAPEX e FINEX no período</p><div class="rel-minis" id="rel-ik"></div><h3>Investimentos (CAPEX)</h3><div class="rel-wf" id="rel-cxl"></div><h3>Dívidas e juros (FINEX)</h3><div class="rel-wf" id="rel-fxl"></div></section>
+<section class="rel-sec" id="rel-s-util"><h2>Utilidades</h2><p class="rel-lead">Água, energia, gás e esgoto · R$ e R$ por diária vendida</p><div class="rel-wf" id="rel-utl"></div><div class="rel-note">${esc(UTIL_NOTE)}</div></section>
+<section class="rel-sec rel-wide" id="rel-s-alertas"><h2>Pontos de atenção</h2><p class="rel-lead">Calculados automaticamente com os dados de hoje e o período escolhido</p><ul class="rel-list" id="rel-alerts"></ul></section>
+<section class="rel-sec" id="rel-s-metas"><h2>Metas</h2><p class="rel-lead" id="rel-l-met"></p><div class="rel-wf" id="rel-met"></div><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="metas">✏️ Editar metas</button></div><div id="rel-ed-metas"></div></section>
+<section class="rel-sec" id="rel-s-pri"><h2>Prioridades</h2><p class="rel-lead" id="rel-l-pri"></p><ul class="rel-list" id="rel-pri"></ul><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="pri">✏️ Editar prioridades</button></div><div id="rel-ed-pri"></div><div class="rel-st" id="rel-cfgmsg" role="status"></div></section>
+</div>
+<footer class="rel-foot">Valores por competência, calculados ao vivo a partir de hsa_reservas.json e hsa_gastos.json, com as mesmas regras do relatório mensal. Resultado operacional = receita líquida − comissões e cartão − OPEX. Geração de caixa = resultado operacional − CAPEX − FINEX. Comparação sempre com os mesmos meses do ano anterior. Mês ainda não fechado: números parciais (podem faltar receitas, custos, comissões e o DAS; comissão do Booking estimada até a fatura).</footer>`;
+
+  function render(){
+    if (!D) return;
+    if (!$('rel-kpis')) $('rel-body').innerHTML = BODY;
+    const y=st.y, ms=st.ms, A=agg(y,ms), hasB=years().includes(y-1), B=hasB?agg(y-1,ms):null;
+    const pl=plabel(y,ms), pv=B?(k=>B[k]):(()=>undefined);
+    $('rel-eb').textContent='Relatório de resultados · '+pl;
+    let h;
+    if (B&&B.eb<=0&&A.eb>0) h=`Resultado operacional positivo, contra prejuízo em ${y-1}`;
+    else if (B&&B.eb>0&&A.eb/B.eb>=2) h=`Resultado operacional ${nf1.format(A.eb/B.eb).replace(',0','')} vezes maior que em ${y-1}`;
+    else if (A.eb<0) h=`Resultado operacional negativo em ${mil(Math.abs(A.eb))}`;
+    else h=`Resultado operacional de ${mil(A.eb)}`+(B&&B.eb?`, ${vr(A.eb,B.eb)>=0?'+':'−'}${nf0.format(Math.abs(vr(A.eb,B.eb)))}% sobre ${y-1}`:'');
+    $('rel-h1').textContent=h;
+    $('rel-hp').textContent=`Faturamento de ${mil(A.bruta)}${B&&B.bruta?' ('+(vr(A.bruta,B.bruta)>=0?'+':'−')+nf0.format(Math.abs(vr(A.bruta,B.bruta)))+'%)':''}, margem de ${pc(A.mg)} e geração de caixa de ${mil(A.fin)}.`;
+    const openSel = ms.some(m=>isOpen(y,m));
+    $('rel-pnote').innerHTML = (B?`Comparação com ${esc(plabel(y-1,ms))}.`:'Sem comparação: não há dados do ano anterior.') + (openSel?` <b>Inclui ${MN[curMo()-1].toLowerCase()}/${String(y).slice(2)}, mês ainda não fechado:</b> os números são parciais. Podem faltar receitas, custos, comissões e o DAS do mês; a comissão do Booking é estimada até chegar a fatura.`:'');
+    // resumo
+    $('rel-l-res').textContent=pl+(B?` · comparado com os mesmos meses de ${y-1}`:'');
+    const K=[['Faturamento',mil(A.bruta),chip(A.bruta,pv('bruta')),B?`${y-1}: `+mil(B.bruta):''],
+      ['Resultado operacional',mil(A.eb),chip(A.eb,pv('eb'),true,'x'),B?`${y-1}: `+mil(B.eb):''],
+      ['Margem operacional',pc(A.mg),chip(A.mg,pv('mg'),true,'pp'),(B?`${y-1}: `+pc(B.mg)+' · ':'')+'referência boa: 20%'],
+      ['Geração de caixa',mil(A.fin),B?chip(A.fin,B.fin,true,'x'):'',B?`${y-1}: `+mil(B.fin):'']];
+    $('rel-kpis').innerHTML=K.map(([l,v,c,s])=>`<div class="rel-card"><div class="rel-kl">${l}</div><div class="rel-kv">${v}</div><div class="rel-ks">${c} ${s}</div></div>`).join('');
+    // cascata
+    const top=Math.max(A.bruta,1);
+    const W=[['Faturamento',A.bruta,'r-tot'],['Simples Nacional',-A.simples,''],['Comissões e cartão',-A.cv,'',A.ota_est>0.5?`inclui ${mil(A.ota_est)} de comissão do Booking estimada (sem fatura)`:''],['OPEX',-A.opex,''],['Resultado operacional',A.eb,'r-sub'],['Investimentos (CAPEX)',-A.capex,''],['Dívidas e juros (FINEX)',-A.finex,''],['Geração de caixa',A.fin,'r-sub']];
+    $('rel-wf').innerHTML=W.map(([l,v,c,s])=>row(l,mil(v),100*Math.abs(v)/top,c,'',s||'')).join('');
+    $('rel-n-caixa').innerHTML=A.eb>0?`O FINEX consome <b>${pc(100*A.finex/A.eb)}</b> do resultado operacional e o CAPEX, <b>${pc(100*A.capex/A.eb)}</b>.`:`No período, o resultado operacional não cobre CAPEX (${mil(A.capex)}) e FINEX (${mil(A.finex)}).`;
+    // mês a mês
+    const all=[...Array(lastMo(y)).keys()].map(i=>i+1);
+    const ebm=m=>{const r=agg(y,[m]);return r?r.eb:0}, ebp=m=>{const r=B?agg(y-1,[m]):null;return r?r.eb:null};
+    const mx=Math.max(1,...all.map(m=>Math.abs(ebm(m))),...(B?all.map(m=>Math.abs(ebp(m)||0)):[0]));
+    const mb=v=>{const w=50*Math.abs(v)/mx;return `<i class="${v>=0?'p':'n'}" style="left:${v>=0?50:50-w}%;width:${Math.max(w,0.6).toFixed(1)}%"></i>`};
+    $('rel-mm').innerHTML=`<div class="rel-mrow rel-mhead"><span></span><span></span><span class="rel-mv1">${y}</span><span class="rel-mo">${B?y-1:''}</span></div>`+
+      all.map(m=>`<div class="rel-mrow${ms.includes(m)?'':' off'}"><span>${MN[m-1]}${isOpen(y,m)?'*':''}</span><div class="rel-mt"><span class="ax"></span>${mb(ebm(m))}</div><span class="rel-mv1">${m1(ebm(m))}</span><span class="rel-mo">${B?m1(ebp(m)):''}</span></div>`).join('')+
+      (all.some(m=>isOpen(y,m))?'<div class="rel-st">* mês ainda não fechado (parcial)</div>':'');
+    const best=[...ms].sort((a,b)=>ebm(b)-ebm(a));
+    $('rel-mg').innerHTML=`<div class="rel-mini"><div class="rel-kl">Melhor mês</div><div class="rel-mv">${MN[best[0]-1]}</div><div class="rel-ks">${mil(ebm(best[0]))}</div></div><div class="rel-mini"><div class="rel-kl">Meses no positivo</div><div class="rel-mv">${ms.filter(m=>ebm(m)>0).length} de ${ms.length}</div><div class="rel-ks">${B?`${y-1}: `+ms.filter(m=>(ebp(m)||0)>0).length+' de '+ms.length:''}</div></div>`;
+    // receita
+    $('rel-l-rec').textContent=`${nf0.format(A.noites)} diárias vendidas de ${nf0.format(A.cap)} disponíveis`;
+    const RK=[['Diárias vendidas',nf0.format(A.noites),chip(A.noites,pv('noites')),B?`${y-1}: `+nf0.format(B.noites):''],
+      ['Ocupação',pc(A.occ),chip(A.occ,pv('occ'),true,'pp'),B?`${y-1}: `+pc(B.occ):''],
+      ['Diária média',rs(A.adr),chip(A.adr,pv('adr')),A.longa_n>0?'sem a longa estadia: '+rs(A.adrsl):(B?`${y-1}: `+rs(B.adr):'')],
+      ['RevPAR',rs(A.rev),chip(A.rev,pv('rev')),'por diária disponível'],
+      ['Permanência média',nf1.format(A.los)+' diárias',chip(A.los,pv('los')),B?`${y-1}: `+nf1.format(B.los):''],
+      ['Desconto médio',pc(A.descp,1),chip(A.descp,pv('descp'),false,'pp'),'sobre a diária de tabela']];
+    $('rel-rk').innerHTML=RK.map(([l,v,c,s])=>`<div class="rel-mini"><div class="rel-kl">${l}</div><div class="rel-mv">${v}</div><div class="rel-ks">${c} ${s}</div></div>`).join('');
+    const eqTop=Math.max(A.rev,A.revliq,A.eq,1);
+    $('rel-eq').innerHTML=row('RevPAR',rs(A.rev),100*A.rev/eqTop,'r-pine')+row('RevPAR líquido',rs(A.revliq),100*A.revliq/eqTop,'r-sub','','sem Simples, comissões e cartão')+row('Ponto de equilíbrio',rs(A.eq),100*A.eq/eqTop,'','','OPEX por diária disponível');
+    const occe=A.revliq?A.occ*A.eq/A.revliq:0;
+    $('rel-n-eq').innerHTML=`Cada diária disponível ${A.revliq>=A.eq?'sobra':'falta'} <b>${rs(Math.abs(A.revliq-A.eq))}</b>. A ocupação que cobre o OPEX é de cerca de <b>${pc(occe)}</b> (atual: ${pc(A.occ)}).`;
+    // canais (longa estadia do Monviso fica fora da diária do direto)
+    const CC=[['Direto','c1'],['Booking','c2'],['Agências','c3']];
+    const tn=CC.reduce((s,[c])=>s+(A.cn[c]?A.cn[c][0]:0),0)||1, tnB=B?CC.reduce((s,[c])=>s+(B.cn[c]?B.cn[c][0]:0),0)||1:1;
+    const cvv=(c,X)=>{const a=(X.cn[c]||[0,0,0]).slice();if(c==='Direto'&&X.longa_n>0){a[0]-=X.longa_n;a[1]-=X.longa_h;}return a;};
+    $('rel-cseg').innerHTML=CC.map(([c,cl])=>`<i class="${cl}" style="width:${(100*(A.cn[c]?A.cn[c][0]:0)/tn).toFixed(1)}%"></i>`).join('');
+    $('rel-cl').innerHTML=CC.map(([c,cl])=>{const a=A.cn[c]||[0,0,0];const v=cvv(c,A);const liq=v[0]?(v[1]-v[2])/v[0]:0;const b=B&&B.cn[c]?B.cn[c]:null;
+      return `<div class="rel-crow"><span class="rel-dot ${cl}"></span><span>${c}</span><b>${pc(100*a[0]/tn)}${b?` <small class="neu" style="font-weight:400">${y-1}: ${pc(100*b[0]/tnB)}</small>`:''}</b><div class="cd">${nf0.format(a[0])} diárias · diária ${rs(v[0]?v[1]/v[0]:0)} · após comissão ${rs(liq)}${c==='Direto'&&A.longa_n>0?' (sem a longa estadia)':''}</div></div>`}).join('');
+    const d=cvv('Direto',A),bk=cvv('Booking',A);const dl=d[0]?(d[1]-d[2])/d[0]:0, bl=bk[0]?(bk[1]-bk[2])/bk[0]:0;
+    $('rel-n-can').innerHTML=(d[0]&&bk[0])?`No período, a diária do direto rendeu <b>${rs(Math.abs(dl-bl))}</b> ${dl>=bl?'a mais':'a menos'} que a do Booking, já descontada a comissão${A.longa_n>0?' (sem a longa estadia)':''}.`:'Sem vendas suficientes nos dois canais para comparar.';
+    // chalés
+    const CH=Object.entries(A.ch).filter(([c,a])=>a[2]>0).map(([c,a])=>({c,n:a[0],h:a[1],d:a[2],rev:a[1]/a[2],occ:100*a[0]/a[2],adr:a[0]?a[1]/a[0]:0})).sort((p,q)=>q.rev-p.rev);
+    const chTop=Math.max(1,...CH.map(x=>x.rev));
+    $('rel-chl').innerHTML=CH.map(x=>{const b=B&&B.ch[x.c]&&B.ch[x.c][2]?B.ch[x.c][1]/B.ch[x.c][2]:(B?0:undefined);
+      return row(x.c,rs(x.rev),100*x.rev/chTop,'r-pine',B?small(x.rev,b,true):'',`ocupação ${pc(x.occ)} · diária ${rs(x.adr)}`)}).join('')+(CH.some(x=>x.c==='Monviso')&&A.longa_n>0?'<div class="rel-st">Monviso inclui a longa estadia.</div>':'');
+    // custos
+    $('rel-l-cus').textContent=`OPEX de ${mil(A.opex)}`+(B&&B.opex?` · ${vr(A.opex,B.opex)>=0?'+':'−'}${nf0.format(Math.abs(vr(A.opex,B.opex)))}% contra ${y-1}`:'');
+    const pes=A.g['Pessoal']||0;
+    $('rel-ck').innerHTML=`<div class="rel-mini"><div class="rel-kl">OPEX por diária vendida</div><div class="rel-mv">${rs(A.cpd)}</div><div class="rel-ks">${chip(A.cpd,pv('cpd'),false)} ${B?`${y-1}: `+rs(B.cpd):''}</div></div><div class="rel-mini"><div class="rel-kl">Pessoal sobre faturamento</div><div class="rel-mv">${pc(A.bruta?100*pes/A.bruta:0)}</div><div class="rel-ks">${B?`${y-1}: `+pc(B.bruta?100*(B.g['Pessoal']||0)/B.bruta:0):''}</div></div>`;
+    const G=Object.entries(A.g).filter(([k,v])=>v>0.5).sort((p,q)=>q[1]-p[1]);const gT=G.length?G[0][1]:1;
+    $('rel-gl').innerHTML=G.map(([k,v])=>row(k,mil(v),100*v/gT,'',B?small(v,B.g[k]||0,false):'',`${pc(A.opex?100*v/A.opex:0)} do OPEX`)).join('');
+    // investimentos e dívidas
+    $('rel-ik').innerHTML=`<div class="rel-mini"><div class="rel-kl">CAPEX</div><div class="rel-mv">${mil(A.capex)}</div><div class="rel-ks">${B?`${y-1}: `+mil(B.capex):''}</div></div><div class="rel-mini"><div class="rel-kl">FINEX</div><div class="rel-mv">${mil(A.finex)}</div><div class="rel-ks">${chip(A.finex,pv('finex'),false)} ${B?`${y-1}: `+mil(B.finex):''}</div></div>`;
+    const lst=(o,ob)=>{const E=Object.entries(o).filter(([k,v])=>Math.abs(v)>=50).sort((p,q)=>q[1]-p[1]);const T=Math.max(1,...E.map(e=>Math.abs(e[1])));return E.length?E.map(([k,v])=>row(k,mil(v),100*Math.abs(v)/T,v<0?'r-pine':'',ob?small(v,ob[k]||0,false):'')).join(''):'<div class="rel-st">Nada no período.</div>'};
+    $('rel-cxl').innerHTML=lst(A.cx,B?B.cx:null); $('rel-fxl').innerHTML=lst(A.fx,B?B.fx:null);
+    // utilidades
+    const UL=[['Água','Água'],['Energia','Energia elétrica'],['Gás','Gás'],['Saneamento','Esgoto (saneamento)']];
+    const uT=Math.max(1,...UL.map(([k])=>A.ut[k]||0));
+    $('rel-utl').innerHTML=UL.map(([k,l])=>{const v=A.ut[k]||0;const b=B?(B.ut[k]||0):undefined;return row(l,mil(v),100*v/uT,'',B?small(v,b,false):'',`${rs(A.noites?v/A.noites:0)} por diária vendida`+(B&&B.noites?` · ${y-1}: ${rs((B.ut[k]||0)/B.noites)}`:''))}).join('');
+    renderAlerts(A,B,y,ms); renderMetas(y,ms); renderPri();
+    drawFilter();
+    try{localStorage.setItem('hsa-rel-filtro',JSON.stringify(st))}catch(e){}
+  }
+
+  function renderAlerts(A,B,y,ms){
+    const L=[]; const MNl=m=>MN[+m.slice(5,7)-1].toLowerCase()+'/'+m.slice(2,4);
+    for (const p of PACE){
+      if (p.prev>=ALERT.paceMin && p.cur < ALERT.pace*p.prev) L.push(['r',`Reservas de ${MNl(p.m)} atrasadas`,`${nf0.format(p.cur)} diárias reservadas até hoje, contra ${nf0.format(p.prev)} no mesmo ponto do ano passado (${pc(100*(p.cur-p.prev)/p.prev)}).`]);
+      else if (p.prev>=ALERT.paceMin && p.cur >= 1.1*p.prev) L.push(['g',`Reservas de ${MNl(p.m)} à frente`,`${nf0.format(p.cur)} diárias reservadas até hoje, contra ${nf0.format(p.prev)} no mesmo ponto do ano passado (+${nf0.format(100*(p.cur-p.prev)/p.prev)}%).`]);
+    }
+    if (A.eb>0 && A.finex/A.eb>ALERT.finex) L.push(['r','Dívidas pesadas',`O FINEX consome ${pc(100*A.finex/A.eb)} do resultado operacional do período.`]);
+    else if (A.eb<=0 && A.finex>0) L.push(['r','Resultado não cobre as dívidas',`Resultado operacional de ${mil(A.eb)} contra FINEX de ${mil(A.finex)}.`]);
+    if (A.fin<0) L.push(['y','Geração de caixa negativa',`${mil(A.fin)} no período, depois de CAPEX e FINEX.`]);
+    if (A.rl>0 && A.mg<ALERT.margem) L.push(['y','Margem baixa',`Margem operacional de ${pc(A.mg)}, abaixo de ${ALERT.margem}%.`]);
+    const neg=ms.filter(m=>!isOpen(y,m)).sort((a,b)=>a-b).filter(m=>{const r=agg(y,[m]);return r&&r.eb<0;});
+    if (neg.length) L.push(['y',`${neg.length} ${neg.length>1?'meses':'mês'} no negativo`,neg.map(m=>MN[m-1]).join(', ')+'. Resultado operacional abaixo de zero.']);
+    if (B){
+      const up=Object.keys(A.g).map(g=>[g,A.g[g],B.g[g]||0]).filter(([g,a,b])=>b>0&&(a-b)/b>ALERT.custo&&a-b>ALERT.custoMin).sort((p,q)=>(q[1]-q[2])-(p[1]-p[2])).slice(0,3);
+      if (up.length) L.push(['y','Custos subindo',up.map(([g,a,b])=>`${g} +${nf0.format(100*(a-b)/b)}% (+${mil(a-b)})`).join(' · ')+'.']);
+      const da=A.longa_n>0?A.adrsl:A.adr, db=B.longa_n>0?B.adrsl:B.adr;
+      if (db>0 && 100*(da-db)/db < ALERT.diaria) L.push(['y','Diária média caindo',`${rs(da)} contra ${rs(db)} no ano anterior (${pc(100*(da-db)/db)})${A.longa_n>0||B.longa_n>0?', sem a longa estadia':''}.`]);
+      if (A.occ-B.occ < ALERT.ocup) L.push(['y','Ocupação menor',`${pc(A.occ)} contra ${pc(B.occ)} no ano anterior.`]);
+    }
+    if (!L.some(x=>x[0]!=='g')) L.unshift(['g','Nenhum ponto de atenção','Nenhuma regra disparou no período escolhido.']);
+    const ord={r:0,y:1,g:2}; L.sort((a,b)=>ord[a[0]]-ord[b[0]]);
+    $('rel-alerts').innerHTML=L.map(([c,t,d])=>`<li class="${c}"><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('');
+  }
+  function renderMetas(y,ms){
+    const M=CFG.metas||{}; const keys=ms.map(m=>key(y,m)).filter(k=>M[k]);
+    const anos=[...new Set(Object.keys(M).map(k=>k.slice(0,4)))].sort();
+    if (!keys.length){
+      $('rel-l-met').textContent=anos.length?`Sem metas para ${y}. Há metas cadastradas para ${anos.join(', ')}.`:'Nenhuma meta cadastrada.';
+      $('rel-met').innerHTML=anos.map(a=>{const ks=Object.keys(M).filter(k=>k.startsWith(a));const br=ks.reduce((s,k)=>s+(+M[k].bruta||0),0),eb=ks.reduce((s,k)=>s+(+M[k].eb||0),0);
+        return `<div class="rel-mini"><div class="rel-kl">Metas ${a} · ${ks.length} meses</div><div class="rel-mv">${mil(eb)}</div><div class="rel-ks">resultado operacional · faturamento ${mil(br)}</div></div>`}).join('');
+      return;
+    }
+    const A=agg(y,keys.map(k=>+k.slice(5,7)));
+    let mn=0, mh=0, mbr=0, meb=0, cap=0;
+    for (const k of keys){ const r=D[k], m=M[k]; const c=r?r.cap:0; cap+=c; const n=c*(+m.occ||0)/100; mn+=n; mh+=n*(+m.adr||0); mbr+=+m.bruta||0; meb+=+m.eb||0; }
+    const occM=cap?100*mn/cap:0, adrM=mn?mh/mn:0;
+    const prog=(l,real,meta,fmt,sub)=>{const p=meta>0?100*real/meta:0;const ok=p>=100;return `<div class="${ok?'r-pine':'r-sub'}"><div class="rel-wl"><span>${l}</span><b>${fmt(real)} <small class="neu">meta ${fmt(meta)}</small> <small class="${ok?'pos':'neg'}">${meta>0?nf0.format(p)+'%':''}</small></b></div>${sub?`<div class="rel-st">${sub}</div>`:''}${bar(p)}</div>`};
+    $('rel-l-met').textContent=`Real × meta · ${keys.length} ${keys.length>1?'meses':'mês'} com meta no período`+(keys.some(k=>isOpen(+k.slice(0,4),+k.slice(5,7)))?' · inclui mês não fechado':'');
+    $('rel-met').innerHTML=prog('Ocupação',A.occ,occM,v=>pc(v))+prog('Diária média',A.adr,adrM,rs)+prog('Faturamento',A.bruta,mbr,mil)+prog('Resultado operacional',A.eb,meb,mil);
+  }
+  function renderPri(){
+    const P=CFG.prioridades||[];
+    $('rel-l-pri').textContent=CFG.atualizadoEm?`Atualizadas em ${new Date(CFG.atualizadoEm+'T12:00').toLocaleDateString('pt-BR')}${CFG.atualizadoPor?' por '+CFG.atualizadoPor:''}`:'';
+    $('rel-pri').innerHTML=P.length?P.map((p,i)=>`<li><b>${i+1}. ${esc(p.t)}</b>${p.d?`<span>${esc(p.d)}</span>`:''}</li>`).join(''):'<li><span>Nenhuma prioridade cadastrada.</span></li>';
+  }
+  // edição (prioridades e metas) — salva em hsa_relatorio_config.json no Dropbox
+  function openEditor(which){
+    editing=which; const box=$('rel-ed-'+which);
+    if (which==='pri'){
+      const P=(CFG.prioridades||[]).concat(Array(Math.max(0,5-(CFG.prioridades||[]).length)).fill({t:'',d:''})).slice(0,5);
+      box.innerHTML=`<div class="rel-ed">${P.map((p,i)=>`<div class="rel-edi"><label for="rel-pt-${i}">Prioridade ${i+1}</label><input id="rel-pt-${i}" value="${esc(p.t)}" placeholder="Título"><textarea id="rel-pd-${i}" rows="2" placeholder="Detalhe (opcional)">${esc(p.d||'')}</textarea></div>`).join('')}
+        <div class="rel-edrow"><button class="rel-btn rel-save" type="button" data-save="pri">Salvar</button><button class="rel-btn" type="button" data-cancel="pri">Cancelar</button></div></div>`;
+    } else {
+      const ano=(Object.keys(CFG.metas||{}).map(k=>+k.slice(0,4)).sort().pop())||(curY()+1);
+      const yy=st.y>=ano-1&&Object.keys(CFG.metas||{}).some(k=>k.startsWith(st.y+'-'))?st.y:ano;
+      box.innerHTML=`<div class="rel-ed"><div class="rel-edrow"><label for="rel-my">Ano</label><input id="rel-my" type="number" value="${yy}" style="width:90px"></div>
+        <div class="rel-tbl"><table><thead><tr><th>Mês</th><th>Ocupação %</th><th>Diária R$</th><th>Faturamento R$</th><th>Resultado R$</th></tr></thead><tbody id="rel-mtb"></tbody></table></div>
+        <div class="rel-edrow"><button class="rel-btn rel-save" type="button" data-save="metas">Salvar</button><button class="rel-btn" type="button" data-cancel="metas">Cancelar</button></div></div>`;
+      let lastY=null; const fill=()=>{const Y=+$('rel-my').value; if(Y===lastY) return; lastY=Y; $('rel-mtb').innerHTML=MN.map((l,i)=>{const m=(CFG.metas||{})[key(Y,i+1)]||{};return `<tr><td>${l}</td>${['occ','adr','bruta','eb'].map(f=>`<td><input id="rel-m-${i}-${f}" inputmode="decimal" value="${m[f]??''}"></td>`).join('')}</tr>`}).join('')};
+      fill(); $('rel-my').addEventListener('change',fill);
+    }
+  }
+  async function saveCfg(which){
+    const box=$('rel-ed-'+which), msg=$('rel-cfgmsg'); const novo=JSON.parse(JSON.stringify(CFG));
+    if (which==='pri'){ novo.prioridades=[0,1,2,3,4].map(i=>({t:$('rel-pt-'+i).value.trim(),d:$('rel-pd-'+i).value.trim()})).filter(p=>p.t); }
+    else { const Y=+$('rel-my').value; if(!(Y>2000)) return; novo.metas=novo.metas||{};
+      MN.forEach((l,i)=>{const r={};let any=false;for(const f of ['occ','adr','bruta','eb']){const v=$(`rel-m-${i}-${f}`).value.replace(/\./g,'').replace(',','.').trim();if(v!==''&&isFinite(+v)){r[f]=+v;any=true;}}
+        if(any) novo.metas[key(Y,i+1)]=r; else delete novo.metas[key(Y,i+1)];}); }
+    let quem=''; try{quem=JSON.parse(localStorage.getItem('hsa_auth')||'{}').nome||''}catch(e){}
+    const t=new Date(); novo.atualizadoEm=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); novo.atualizadoPor=quem;
+    msg.textContent='Salvando…';
+    try{
+      const r=await dbxFetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:CFG_PATH,mode:'overwrite',mute:true})},body:JSON.stringify(novo,null,2)});
+      if(!r.ok) throw new Error('Dropbox '+r.status);
+      CFG=novo; cfgFromFile=true; box.innerHTML=''; editing=null; msg.textContent='Salvo. Todos que abrirem o painel já veem a nova versão.'; render();
+    }catch(e){ msg.textContent='Não consegui salvar ('+e.message+'). Nada foi alterado.'; }
+  }
+  function onEdit(e){
+    const b=e.target.closest('button'); if(!b) return;
+    if (b.dataset.ed){ openEditor(b.dataset.ed); }
+    else if (b.dataset.save){ saveCfg(b.dataset.save); }
+    else if (b.dataset.cancel){ $('rel-ed-'+b.dataset.cancel).innerHTML=''; editing=null; }
+  }
+  async function fetchCfg(){
+    try{ const r=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:CFG_PATH})}});
+      if (r.status===409||r.status===404) return; if(!r.ok) return; const c=await r.json(); if(c&&typeof c==='object'){ CFG=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)),c); cfgFromFile=true; } }catch(e){}
+  }
+  function drawFilter(){
+    const y=st.y, L=lastMo(y), C=closedMo(y);
+    $('rel-years').innerHTML=years().map(v=>`<button class="rel-chip" data-y="${v}" aria-pressed="${v===y}">${v}</button>`).join('');
+    const Q=[['Acumulado',[...Array(Math.max(C,1)).keys()].map(i=>i+1)],['1º tri',[1,2,3]],['2º tri',[4,5,6]],['3º tri',[7,8,9]],['4º tri',[10,11,12]]].map(([l,m])=>[l,m.filter(x=>x<=L)]).filter(([l,m])=>m.length);
+    const same=(a,b)=>a.length===b.length&&[...a].sort((p,q)=>p-q).every((v,i)=>v===[...b].sort((p,q)=>p-q)[i]);
+    $('rel-quick').innerHTML=Q.map(([l,m],i)=>`<button class="rel-chip" data-q="${m.join(',')}" aria-pressed="${same(st.ms,m)}">${l}</button>`).join('');
+    $('rel-months').innerHTML=MN.map((l,i)=>`<button class="rel-chip${isOpen(y,i+1)?' open':''}" data-m="${i+1}" aria-pressed="${st.ms.includes(i+1)}" ${i+1>L?'disabled':''} title="${isOpen(y,i+1)?'Mês ainda não fechado (parcial)':''}">${l}</button>`).join('');
+  }
+  async function fetchJson(path){
+    const r = await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path})}});
+    if (!r.ok) throw new Error('Dropbox '+r.status); const d = await r.json(); return Array.isArray(d)?d:[];
+  }
+  async function load(force){
+    if (loading) return; if (D && !force && Date.now()-loadedAt < 120000) { render(); return; }
+    loading = true; $('rel-upd').textContent='Atualizando…'; $('rel-err').innerHTML='';
+    let R, G, fonte='Dropbox';
+    try { [R, G] = await Promise.all([fetchJson(DBX_RESERVAS_PATH), fetchJson(DBX_GASTOS_PATH), fetchCfg()]); }
+    catch(e){
+      R = window._reservasPreload; G = window._gastosPreload; fonte='cópia carregada na abertura do painel';
+      if (!R || !G){ $('rel-err').innerHTML='<div class="rel-err">Não consegui baixar os dados do Dropbox ('+esc(e.message)+'). Confira a conexão e toque em Atualizar dados.</div>'; $('rel-upd').textContent='Sem dados'; loading=false; return; }
+      $('rel-err').innerHTML='<div class="rel-err">Não consegui baixar os dados agora; mostrando a '+fonte+'.</div>';
+    }
+    try { D = relCompute(R, G); PACE = relPace(R); loadedAt = Date.now(); }
+    catch(e){ $('rel-err').innerHTML='<div class="rel-err">Erro ao calcular o relatório: '+esc(e.message)+'</div>'; loading=false; return; }
+    if (!st) st = loadState(); if (!years().includes(st.y)) st = defState();
+    const t=new Date(); $('rel-upd').textContent=`Dados de ${t.toLocaleDateString('pt-BR')} às ${t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${R.length} reservas · ${G.length} lançamentos`;
+    loading=false; render();
+  }
+  function onFilter(e){
+    const b=e.target.closest('button'); if(!b||b.disabled||!D) return;
+    if (b.dataset.y){ const ny=+b.dataset.y; if (ny!==st.y){ st.y=ny; st.ms=st.ms.filter(m=>m<=lastMo(ny)); if(!st.ms.length) st.ms=[...Array(Math.max(closedMo(ny),1)).keys()].map(i=>i+1); } }
+    else if (b.dataset.q){ st.ms=b.dataset.q.split(',').map(Number); }
+    else if (b.dataset.m){ const m=+b.dataset.m; st.ms=st.ms.includes(m)?st.ms.filter(x=>x!==m):[...st.ms,m]; if(!st.ms.length) st.ms=[m]; }
+    render();
+  }
+  // visual claro/escuro (claro = padrão do relatório em PDF)
+  function setTheme(light){
+    const v=$('view-relatorio'); v.classList.toggle('rel-light',light);
+    const b=$('rel-theme'); b.setAttribute('aria-pressed',String(light)); b.textContent=light?'🌙 Visual escuro':'☀️ Visual claro';
+    try{localStorage.setItem('hsa-rel-tema',light?'claro':'escuro')}catch(e){}
+  }
+  // PDF do relatório completo: o mais recente na pasta do Dropbox
+  const PDF_DIR='/Monte Verde + TV/Gerencial/Relatórios';
+  async function baixarPdf(){
+    const msg=$('rel-pdfmsg'); msg.textContent='Procurando o PDF mais recente…';
+    try{
+      const r=await dbxFetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:PDF_DIR})});
+      if(r.status===409){ msg.textContent='Pasta "Gerencial/Relatórios" não encontrada no Dropbox. Crie a pasta e coloque o PDF do relatório completo nela.'; return; }
+      if(!r.ok) throw new Error('Dropbox '+r.status);
+      const L=(await r.json()).entries.filter(e=>e['.tag']==='file'&&/\.pdf$/i.test(e.name));
+      if(!L.length){ msg.textContent='Nenhum PDF na pasta "Gerencial/Relatórios" do Dropbox.'; return; }
+      const pref=L.filter(e=>/complet/i.test(e.name)); const f=(pref.length?pref:L).sort((a,b)=>String(b.server_modified).localeCompare(String(a.server_modified)))[0];
+      msg.textContent='Baixando '+f.name+'…';
+      const d=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:f.path_lower})}});
+      if(!d.ok) throw new Error('Dropbox '+d.status);
+      const blob=await d.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+      msg.textContent=f.name+' · atualizado em '+new Date(f.server_modified).toLocaleDateString('pt-BR');
+    }catch(e){ msg.textContent='Não consegui baixar o PDF ('+e.message+').'; }
+  }
+  let wired=false;
+  function open(){
+    if (!wired){ wired=true; $('rel-filter').addEventListener('click',onFilter); $('rel-refresh').addEventListener('click',()=>load(true));
+      $('rel-theme').addEventListener('click',()=>setTheme(!$('view-relatorio').classList.contains('rel-light')));
+      $('rel-print').addEventListener('click',()=>{ if(D) window.print(); });
+      $('rel-pdf').addEventListener('click',baixarPdf);
+      $('rel-body').addEventListener('click',onEdit);
+      let t='escuro'; try{t=localStorage.getItem('hsa-rel-tema')||'escuro'}catch(e){} setTheme(t==='claro'); }
+    load(false);
+  }
+  return { open, _setData:(d,p)=>{D=d;PACE=p||[];st=st||loadState();render();} };
+})();
+
+</script>
+<!-- REL-JS:END -->
 </body>
 </html>
