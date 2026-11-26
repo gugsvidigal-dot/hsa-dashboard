@@ -11634,12 +11634,21 @@ window.addEventListener('load', () => {
 #view-relatorio #rel-axview{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:10px}
 #view-relatorio .rel-axpg{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.25);max-width:100%}
 @media (max-width:760px){
-  #view-relatorio .rel-scr{grid-template-columns:minmax(0,1fr) auto auto}
-  #view-relatorio .rel-scl{grid-column:1/-1;padding-left:19px;font-size:14px}
+  #view-relatorio .rel-scr{grid-template-columns:minmax(0,1fr) 96px 104px;gap:2px 8px}
+  #view-relatorio .rel-sci{grid-column:1/-1;grid-row:1}
+  #view-relatorio .rel-sci b{font-size:16px}
+  #view-relatorio .rel-scl{grid-column:1/-1;grid-row:3;padding-left:19px;font-size:14px}
+  #view-relatorio .rel-scv{grid-row:2;font-size:15px;white-space:nowrap}
+  #view-relatorio .rel-scv.o{grid-column:2}#view-relatorio .rel-scv:not(.o){grid-column:3}
+  #view-relatorio .rel-sch2 .rel-scv{grid-row:1;font-size:11px}
+  #view-relatorio .rel-filter>div:nth-child(2){flex-basis:100%}
   #view-relatorio .rel-sch2 .rel-scl{display:none}
   #view-relatorio .rel-cen{grid-template-columns:1fr}
   #view-relatorio .rel-pid,#view-relatorio .rel-pim,#view-relatorio .rel-pis{margin-left:0}
 }
+#view-relatorio #rel-quick{display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:6px}
+#view-relatorio #rel-quick .rel-chip{padding:7px 8px;text-align:center;white-space:nowrap}
+@media (max-width:420px){#view-relatorio #rel-quick .rel-chip{font-size:13px;padding:7px 4px}}
 @media print{
   @page{size:A4;margin:12mm}
   body{background:#fff!important;background-image:none!important}
@@ -13733,7 +13742,7 @@ const relView = (() => {
     add('Ocupação de equilíbrio',B?pc(occe(B)):'–',pc(occe(A)),A.occ>=1.2*occe(A)?'g':(A.occ>=occe(A)?'y':'r'),`ocupação real de ${pc(A.occ)}`);
     const lowCh=X=>{const L=Object.entries(X.ch).filter(([c,a])=>a[2]>0).map(([c,a])=>({c,rev:a[1]/a[2],occ:100*a[0]/a[2]})).sort((p,q)=>p.rev-q.rev);return L[0]||null;};
     const la=lowCh(A), lb=B?lowCh(B):null;
-    if (la) add('Chalé com menor RevPAR',lb?`${lb.c} ${rs(lb.rev)}`:'–',`${la.c} ${rs(la.rev)}`,la.rev>=0.6*A.rev?'g':(la.rev>=0.4*A.rev?'y':'r'),`${pc(la.occ)} de ocupação · média da casa ${rs(A.rev)}`);
+    if (la) add('Chalé com menor RevPAR',lb?rs(lb.rev):'–',rs(la.rev),la.rev>=0.6*A.rev?'g':(la.rev>=0.4*A.rev?'y':'r'),`${la.c}, com ${pc(la.occ)} de ocupação · média da casa ${rs(A.rev)}`+(lb?` · em ${y-1}: ${lb.c}`:''));
     // custos
     sec('Custos, investimentos e dívidas');
     const vo=B?vr(A.opex,B.opex):null, vb=B?vr(A.bruta,B.bruta):null;
