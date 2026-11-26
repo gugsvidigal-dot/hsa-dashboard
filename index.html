@@ -13592,7 +13592,7 @@ const relView = (() => {
       if(!r.ok) throw new Error('Dropbox '+r.status);
       const L=(await r.json()).entries.filter(e=>e['.tag']==='file'&&/\.pdf$/i.test(e.name));
       if(!L.length){ msg.textContent='Nenhum PDF na pasta "Gerencial/Relatórios" do Dropbox.'; return; }
-      const pref=L.filter(e=>/complet/i.test(e.name)); const f=(pref.length?pref:L).sort((a,b)=>String(b.server_modified).localeCompare(String(a.server_modified)))[0];
+      let pref=L.filter(e=>/relat.rio gerencial/i.test(e.name)); if(!pref.length) pref=L.filter(e=>/complet/i.test(e.name)); const f=(pref.length?pref:L).sort((a,b)=>String(b.server_modified).localeCompare(String(a.server_modified)))[0];
       msg.textContent='Baixando '+f.name+'…';
       const d=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:f.id})}});
       if(!d.ok) throw new Error('Dropbox '+d.status);
