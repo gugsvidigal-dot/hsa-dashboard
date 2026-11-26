@@ -542,7 +542,7 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   </div>
   <div class="header-nav">
     <div class="ptabs">
-      <button class="ptab"    id="ptab-sumario"    onclick="window._relPage='sum';goView('relatorio',this)">🧭 Sumário Executivo</button>
+      <button class="ptab"    id="ptab-sumario"    onclick="window._relPage='sum';goView('relatorio',this)">🧭 Painel KPIs</button>
       <button class="ptab"    id="ptab-relatorio"    onclick="window._relPage='rel';goView('relatorio',this)">📑 Relatório</button>
       <button class="ptab"    id="ptab-anexos"    onclick="window._relPage='anexos';goView('relatorio',this)">📎 Anexos</button>
       <button class="ptab"    id="ptab-plano"    onclick="window._relPage='plano';goView('relatorio',this)">✅ Plano e Projetos</button>
@@ -11572,7 +11572,7 @@ window.addEventListener('load', () => {
 #view-relatorio .rel-tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--r-muted);text-align:left;padding:4px}
 #view-relatorio .rel-tbl td{padding:3px 4px}
 #view-relatorio .rel-tbl td input{padding:6px 8px;font-size:14px;min-width:80px}
-/* abas Sumário executivo, Plano e Projetos, Metas, Anexos */
+/* abas Painel KPIs, Plano e Projetos, Metas, Anexos */
 #view-relatorio[data-pg]:not([data-pg="rel"]) .rel-toc{display:none}
 #view-relatorio[data-pg="plano"] .rel-filter,#view-relatorio[data-pg="metas"] .rel-filter,#view-relatorio[data-pg="anexos"] .rel-filter,
 #view-relatorio[data-pg="plano"] .rel-pnote,#view-relatorio[data-pg="metas"] .rel-pnote,#view-relatorio[data-pg="anexos"] .rel-pnote{display:none}
@@ -13701,7 +13701,7 @@ const relView = (() => {
       msg.textContent=f.name+' · atualizado em '+new Date(f.server_modified).toLocaleDateString('pt-BR');
     }catch(e){ msg.textContent='Não consegui baixar o PDF ('+e.message+').'; }
   }
-  // ================= outras páginas (abas Sumário executivo, Plano e Projetos, Metas, Anexos) =================
+  // ================= outras páginas (abas Painel KPIs, Plano e Projetos, Metas, Anexos) =================
   const PAGES = { rel:{tab:'relatorio'}, sum:{tab:'sumario'}, plano:{tab:'plano'}, metas:{tab:'metas27'}, anexos:{tab:'anexos'} };
   function go(pg){ window._relPage=pg; if (typeof goView==='function') goView('relatorio', $('ptab-'+PAGES[pg].tab)); else open(pg); }
   const dot = c => `<span class="rel-dot2 ${c}" aria-hidden="true"></span>`;
@@ -13713,10 +13713,10 @@ const relView = (() => {
     $('rel-pdf').hidden = PG==='anexos';
     if (PG==='sum') renderSum(); else if (PG==='plano') renderPlano(); else if (PG==='metas') renderMetas27(); else renderAnexos();
   }
-  // ---------- Sumário executivo ----------
+  // ---------- Painel KPIs ----------
   function renderSum(){
     const y=st.y, ms=st.ms, A=agg(y,ms), hasB=years().includes(y-1), B=hasB?agg(y-1,ms):null, pl=plabel(y,ms);
-    $('rel-eb').textContent='Sumário executivo · '+pl;
+    $('rel-eb').textContent='Painel KPIs · '+pl;
     const openSel = ms.some(m=>isOpen(y,m));
     $('rel-pnote').innerHTML = (B?`Comparação com ${esc(plabel(y-1,ms))}.`:'Sem comparação: não há dados do ano anterior.') + (openSel?` <b>Inclui ${MN[curMo()-1].toLowerCase()}/${String(y).slice(2)}, mês ainda não fechado:</b> números parciais.`:'');
     const T=[]; const sec=(t)=>{T.push({sec:t});}; const add=(ind,vb,va,c,lei)=>T.push({ind,vb,va,c,lei});
@@ -13811,7 +13811,7 @@ const relView = (() => {
     const newA=editing==='new:acao'?planoForm('new:acao'):'', newP=editing==='new:projeto'?planoForm('new:projeto'):'';
     const done=(L,f,lab)=>L.length?`<details class="rel-done"><summary>${lab} (${L.length})</summary>${L.map((x,i)=>f(x,'✓')).join('')}</details>`:'';
     $('rel-pbody').innerHTML=`<div class="rel-grid">
-<section class="rel-sec rel-wide"><h2>Prioridades</h2><p class="rel-lead">Itens com número de prioridade (1, 2, 3…). Aparecem no Relatório, no Sumário executivo e no PDF. Itens com o mesmo número saem juntos.</p><ul class="rel-list">${priList().map((p,i)=>`<li><b>${i+1}. ${esc(p.t)}</b>${p.d?`<span>${esc(p.d)}</span>`:''}</li>`).join('')||'<li><span>Nenhuma prioridade marcada.</span></li>'}</ul></section>
+<section class="rel-sec rel-wide"><h2>Prioridades</h2><p class="rel-lead">Itens com número de prioridade (1, 2, 3…). Aparecem no Relatório, no Painel KPIs e no PDF. Itens com o mesmo número saem juntos.</p><ul class="rel-list">${priList().map((p,i)=>`<li><b>${i+1}. ${esc(p.t)}</b>${p.d?`<span>${esc(p.d)}</span>`:''}</li>`).join('')||'<li><span>Nenhuma prioridade marcada.</span></li>'}</ul></section>
 <section class="rel-sec rel-wide"><h2>Plano de ação</h2><p class="rel-lead">O que fazer com os números do relatório · página Recomendações do PDF</p>${abertas.map((x,i)=>aRow(x,i+1)).join('')}${newA}<div class="rel-edrow"><button class="rel-btn" type="button" data-pnew="acao">+ Nova ação</button></div>${done(feitasA,aRow,'Ações concluídas')}</section>
 <section class="rel-sec rel-wide"><h2>Projetos e investimentos</h2><p class="rel-lead">Ordenados pela nota de impacto (máx. 33) · página Projetos do PDF. "Fazer já" = segurança ou risco legal máximo, ou nota ≥ 18.</p>${pab.map((x,i)=>pRow(x,i+1)).join('')}${newP}<div class="rel-edrow"><button class="rel-btn" type="button" data-pnew="projeto">+ Novo projeto</button></div>${done(feitosP,pRow,'Projetos concluídos')}
 <h3>Impacto × custo</h3>${matriz(pab)}</section>
