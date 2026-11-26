@@ -542,7 +542,11 @@ footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   </div>
   <div class="header-nav">
     <div class="ptabs">
-      <button class="ptab"    id="ptab-relatorio"    onclick="goView('relatorio',this)">📑 Relatório</button>
+      <button class="ptab"    id="ptab-relatorio"    onclick="window._relPage='rel';goView('relatorio',this)">📑 Relatório</button>
+      <button class="ptab"    id="ptab-sumario"    onclick="window._relPage='sum';goView('relatorio',this)">🧭 Sumário Executivo</button>
+      <button class="ptab"    id="ptab-plano"    onclick="window._relPage='plano';goView('relatorio',this)">✅ Plano e Projetos</button>
+      <button class="ptab"    id="ptab-metas27"    onclick="window._relPage='metas';goView('relatorio',this)">🎯 Metas</button>
+      <button class="ptab"    id="ptab-anexos"    onclick="window._relPage='anexos';goView('relatorio',this)">📎 Anexos</button>
       <button class="ptab"    id="ptab-resultado"    onclick="goView('resultado',this)">📈 Resultado</button>
       <button class="ptab"    id="ptab-vendas"       onclick="goView('vendas',this)">📊 Vendas</button>
       <button class="ptab"    id="ptab-gastos"       onclick="goView('gastos',this)">💰 Gastos</button>
@@ -4765,7 +4769,7 @@ function goView(v, btn){
   else if(v==='comp')      renderComp();
   else if(v==='vendas')    renderVendas();
   else if(v==='resultado') renderResultado();
-  else if(v==='relatorio') relView.open();
+  else if(v==='relatorio') relView.open(window._relPage||'rel');
   else if(v==='aportes')   renderAportes();
   else if(v==='chales')    renderChales();
   else if(v==='canais')    renderCanais();
@@ -11338,7 +11342,7 @@ async function iniciarDashboard() {
     ]);
 
     clearTimeout(loadingTimeout);
-    /*REL-INICIO*/ goView('relatorio', document.getElementById('ptab-relatorio'));
+    /*REL-INICIO*/ window._relPage='rel'; goView('relatorio', document.getElementById('ptab-relatorio'));
   } catch(e) {
     console.error('iniciarDashboard error:', e);
     esconderLoading();
@@ -11568,6 +11572,74 @@ window.addEventListener('load', () => {
 #view-relatorio .rel-tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--r-muted);text-align:left;padding:4px}
 #view-relatorio .rel-tbl td{padding:3px 4px}
 #view-relatorio .rel-tbl td input{padding:6px 8px;font-size:14px;min-width:80px}
+/* abas Sumário executivo, Plano e Projetos, Metas, Anexos */
+#view-relatorio[data-pg]:not([data-pg="rel"]) .rel-toc{display:none}
+#view-relatorio[data-pg="plano"] .rel-filter,#view-relatorio[data-pg="metas"] .rel-filter,#view-relatorio[data-pg="anexos"] .rel-filter,
+#view-relatorio[data-pg="plano"] .rel-pnote,#view-relatorio[data-pg="metas"] .rel-pnote,#view-relatorio[data-pg="anexos"] .rel-pnote{display:none}
+#view-relatorio .rel-dot2{display:inline-block;width:11px;height:11px;border-radius:50%;flex:none;background:var(--r-muted)}
+#view-relatorio .rel-dot2.g{background:var(--rel-pos)}#view-relatorio .rel-dot2.y{background:var(--rel-gold)}#view-relatorio .rel-dot2.r{background:var(--rel-neg)}#view-relatorio .rel-dot2.b{background:#5B8DEF}
+#view-relatorio .rel-sc{display:flex;flex-direction:column}
+#view-relatorio .rel-scr{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,2fr);gap:4px 14px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--r-border)}
+#view-relatorio .rel-sch2,#view-relatorio .rel-sch2 .rel-scl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--r-muted);font-weight:600;padding-top:0}
+#view-relatorio .rel-sch{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--r-accent2);font-weight:700;padding:16px 0 4px;border-bottom:1px solid var(--r-border)}
+#view-relatorio .rel-sci{display:flex;gap:8px;align-items:baseline}
+#view-relatorio .rel-sci b{font-weight:600}
+#view-relatorio .rel-scv{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+#view-relatorio .rel-scv.o{font-weight:400;color:var(--r-muted)}
+#view-relatorio .rel-scl{font-size:14px;color:var(--r-muted)}
+#view-relatorio .rel-leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--r-muted);margin-top:12px}
+#view-relatorio .rel-leg span{display:flex;gap:6px;align-items:center}
+#view-relatorio .rel-pi{border-bottom:1px solid var(--r-border);padding:12px 0}
+#view-relatorio .rel-pi.done{opacity:.65}
+#view-relatorio .rel-pih{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+#view-relatorio .rel-pih b{flex:1 1 220px;font-weight:600}
+#view-relatorio .rel-ix{font-size:13px;color:var(--r-muted);min-width:18px;font-variant-numeric:tabular-nums}
+#view-relatorio .rel-pri{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--r-accent2);color:#1F2A22;font-size:12px;font-weight:700}
+#view-relatorio .rel-tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--rel-track);color:var(--r-text);white-space:nowrap}
+#view-relatorio .rel-tag.g{background:rgba(52,199,123,.16);color:var(--rel-pos)}#view-relatorio .rel-tag.y{background:rgba(240,180,41,.16);color:var(--rel-gold)}
+#view-relatorio .rel-tag.r{background:rgba(240,82,82,.16);color:var(--rel-neg)}#view-relatorio .rel-tag.b{background:rgba(91,141,239,.16);color:#5B8DEF}
+#view-relatorio .rel-btn.rel-sm{padding:3px 10px;font-size:13px}
+#view-relatorio .rel-pid{font-size:14px;margin:6px 0 0 28px}
+#view-relatorio .rel-pim{font-size:13px;color:var(--r-muted);margin:4px 0 0 28px}
+#view-relatorio .rel-pis{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px;color:var(--r-muted);margin:6px 0 0 28px}
+#view-relatorio .rel-pis b{color:var(--r-text)}
+#view-relatorio .rel-nb{display:inline-block;width:80px;height:7px;border-radius:4px;background:var(--rel-track);overflow:hidden}
+#view-relatorio .rel-nb i{display:block;height:100%;background:var(--rel-pine)}
+#view-relatorio .rel-done{margin-top:12px}#view-relatorio .rel-done summary{cursor:pointer;color:var(--r-muted);font-size:14px}
+#view-relatorio .rel-edg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+#view-relatorio .rel-edw{grid-column:1/-1}
+#view-relatorio .rel-ed select{font:inherit;font-size:15px;color:var(--r-text);background:var(--r-surf2);border:1px solid var(--r-border);border-radius:8px;padding:8px 10px;width:100%}
+#view-relatorio .rel-del{color:var(--rel-neg)}
+#view-relatorio .rel-mx svg{width:100%;height:auto;max-width:720px;display:block}
+#view-relatorio .rel-mx .q1{fill:var(--rel-pos);opacity:.08}#view-relatorio .rel-mx .q2{fill:var(--rel-gold);opacity:.08}
+#view-relatorio .rel-mx .ql{font-size:11px;font-weight:700;letter-spacing:.06em}#view-relatorio .rel-mx .ql.g{fill:var(--rel-pos)}#view-relatorio .rel-mx .ql.y{fill:var(--rel-gold)}
+#view-relatorio .rel-mx .ax{font-size:11px;fill:var(--r-muted)}#view-relatorio .rel-mx .axl{stroke:var(--r-border)}
+#view-relatorio .rel-mx .pt{stroke:var(--r-surf);stroke-width:2;fill:var(--r-muted)}#view-relatorio .rel-mx .pt.g{fill:var(--rel-pos)}#view-relatorio .rel-mx .pt.y{fill:var(--rel-gold)}#view-relatorio .rel-mx .pt.r{fill:var(--rel-neg)}#view-relatorio .rel-mx .pt.b{fill:#5B8DEF}
+#view-relatorio .rel-mx .pn{font-size:10px;font-weight:700;fill:#fff;pointer-events:none}
+#view-relatorio .rel-cen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:8px}
+#view-relatorio .rel-base{border-color:var(--r-accent2);box-shadow:inset 0 0 0 1px var(--r-accent2)}
+#view-relatorio .rel-cl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14px;margin:10px 0 8px}
+#view-relatorio .rel-cl span{color:var(--r-muted)}#view-relatorio .rel-cl b{text-align:right;font-variant-numeric:tabular-nums}
+#view-relatorio .rel-mt27 td,#view-relatorio .rel-mt27 th{text-align:right;padding:6px 6px;border-bottom:1px solid var(--r-border);font-variant-numeric:tabular-nums;white-space:nowrap}
+#view-relatorio .rel-mt27 td:first-child,#view-relatorio .rel-mt27 th:first-child,#view-relatorio .rel-mt27 td.l{text-align:left}
+#view-relatorio .rel-mt27 tr.fut td{color:var(--r-muted)}#view-relatorio .rel-mt27 td.l{white-space:normal}
+#view-relatorio .rel-pace{font-weight:700;color:var(--r-text)}
+#view-relatorio .rel-axb{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:12px}
+#view-relatorio .rel-axbtn{font:inherit;text-align:left;display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:var(--r-surf);color:var(--r-text);border:1px solid var(--r-border);border-radius:12px;padding:12px 14px;cursor:pointer}
+#view-relatorio .rel-axbtn .l{font-family:var(--r-head);font-size:26px;font-weight:700;color:var(--r-accent2)}
+#view-relatorio .rel-axbtn b{display:block}#view-relatorio .rel-axbtn small{display:block;color:var(--r-muted);font-size:13px}
+#view-relatorio .rel-axbtn .p{font-size:13px;color:var(--r-muted)}
+#view-relatorio .rel-axbtn[aria-pressed="true"]{border-color:var(--r-accent2);box-shadow:inset 0 0 0 1px var(--r-accent2)}
+#view-relatorio .rel-axbtn:focus-visible{outline:2px solid var(--r-accent2);outline-offset:2px}
+#view-relatorio #rel-axview{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:10px}
+#view-relatorio .rel-axpg{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.25);max-width:100%}
+@media (max-width:760px){
+  #view-relatorio .rel-scr{grid-template-columns:minmax(0,1fr) auto auto}
+  #view-relatorio .rel-scl{grid-column:1/-1;padding-left:19px;font-size:14px}
+  #view-relatorio .rel-sch2 .rel-scl{display:none}
+  #view-relatorio .rel-cen{grid-template-columns:1fr}
+  #view-relatorio .rel-pid,#view-relatorio .rel-pim,#view-relatorio .rel-pis{margin-left:0}
+}
 @media print{
   @page{size:A4;margin:12mm}
   body{background:#fff!important;background-image:none!important}
@@ -13272,12 +13344,9 @@ const relView = (() => {
   const CFG_PATH = '/Monte Verde + TV/Gerencial/hsa_relatorio_config.json';
   const DEFAULT_CFG = {
     metas: {"2027-01": {"occ": 14.3, "adr": 902, "bruta": 28595, "eb": -2600}, "2027-02": {"occ": 18.6, "adr": 928, "bruta": 34675, "eb": 2436}, "2027-03": {"occ": 15.8, "adr": 776, "bruta": 27254, "eb": -6418}, "2027-04": {"occ": 14.2, "adr": 1117, "bruta": 34167, "eb": 1992}, "2027-05": {"occ": 27.5, "adr": 1063, "bruta": 65013, "eb": 20703}, "2027-06": {"occ": 34.7, "adr": 1195, "bruta": 89361, "eb": 32923}, "2027-07": {"occ": 38.8, "adr": 1389, "bruta": 120046, "eb": 45015}, "2027-08": {"occ": 28.7, "adr": 1098, "bruta": 70044, "eb": 27514}, "2027-09": {"occ": 24.6, "adr": 985, "bruta": 52188, "eb": 12240}, "2027-10": {"occ": 24.9, "adr": 1118, "bruta": 61873, "eb": 21663}, "2027-11": {"occ": 26.3, "adr": 949, "bruta": 53753, "eb": 14392}, "2027-12": {"occ": 42.8, "adr": 1072, "bruta": 102014, "eb": 34822}},  // cenário Base de Perspectivas 2027 (an3/metas.py)
-    prioridades: [
-      {t:'Vender dezembro e as festas', d:'Preços por chalé e campanha para ex-hóspedes, até 05/12.'},
-      {t:'Ajustar as regras de preço', d:'Prêmio no fim de semana e feriado, última hora só com data vazia e piso de diária líquida.'},
-      {t:'Concluir a obra do piso do Monviso', d:''},
-      {t:'Contratar a nova fossa e trocar as portas do alojamento dos funcionários', d:''},
-      {t:'Manutenção do deck da piscina', d:''}],
+    plano: {"acoes": [{"id": "a1", "t": "Vender dezembro e as festas", "d": "Dez/26 tem 16 diárias reservadas, contra 42 no mesmo ponto de 2025; 24/12–01/01 tem 3 de 56. Preço por chalé já proposto; campanha para ex-hóspedes; pacote de 3–4 diárias se as festas não passarem de 50% até 15/12.", "efeito": "10 diárias ≈ R$ 10 mil de faturamento", "quando": "até 05/12", "resp": "", "status": "Em andamento", "pri": 1, "resumo": "Preços por chalé e campanha para ex-hóspedes, até 05/12.", "ref": "20"}, {"id": "a2", "t": "Ajustar as regras de preço", "d": "Prêmio real no fim de semana e feriado (hoje só +10% no líquido); última hora só com a data vazia; piso líquido de R$ 600–850; Chamonix ~12% mais barato (ocupação de 16%).", "efeito": "+5% na diária ≈ R$ 19 mil/ano", "quando": "dez/26", "resp": "", "status": "A fazer", "pri": 2, "resumo": "Prêmio no fim de semana e feriado, última hora só com data vazia e piso de diária líquida.", "ref": "14, 20, 25–26"}, {"id": "a3", "t": "Vender a baixa temporada", "d": "Jan–abr ainda fecham negativos (−R$ 17,3 mil em 2026). Pacotes de meio de semana, estadias longas e grupos e empresas.", "efeito": "jan–abr no zero: margem de ~25%", "quando": "jan–abr/27", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "7, 19"}, {"id": "a4", "t": "Crescer o direto", "d": "Reativar ex-hóspedes (cashback do HPrime) e trazer para o direto quem veio pelo Booking; revisar comissões e prospectar agências.", "efeito": "10 diárias migradas ≈ R$ 3 mil", "quando": "1º tri/27", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "12, 25"}, {"id": "a5", "t": "Atacar o FINEX", "d": "Renegociar ou quitar o capital de giro mais caro; calendário e reserva de caixa para o dia 20 para não gerar novas dívidas fiscais (R$ 4,7 mil em 2026); reduzir a antecipação de recebíveis.", "efeito": "FINEX de R$ 52,7 mil em 2026", "quando": "contínuo", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "16"}, {"id": "a6", "t": "Segurança e vizinhança primeiro no CAPEX", "d": "Deck da piscina, fossa da lavanderia e câmeras do estacionamento antes da alta temporada; retrofit dos chalés de menor RevPAR só com orçamento e retorno em diária.", "efeito": "evita acidente, multa e conflito", "quando": "até jun/27", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "22"}, {"id": "a7", "t": "Metas e acompanhamento", "d": "Metas 2027 no painel (real × meta mensal) e cadastro de pousada fechada; fechamento mensal até o dia 10.", "efeito": "decisões no mês, não no fim do ano", "quando": "jan/27", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "19, 34"}, {"id": "a8", "t": "Água e gás", "d": "Teste de vazamento e leitura semanal do hidrômetro (base de ~72 m³/mês); cobrar a Ultragaz e cotar outro fornecedor de gás (kg +17% desde a renegociação) e avaliar bomba de calor.", "efeito": "vazamentos custaram ~R$ 10 mil em 2025", "quando": "dez/26–1º tri/27", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "30, 31–32"}, {"id": "a9", "t": "Pessoal", "d": "Horas extras e domingos somaram R$ 16,5 mil em 2026, mais da metade em mai–ago: ajustar escalas na baixa temporada; completar os lançamentos de 2025.", "efeito": "custo por diária já caiu 16%", "quando": "1º tri/27", "resp": "", "status": "A fazer", "pri": null, "resumo": "", "ref": "24"}], "projetos": [{"id": "p0", "t": "Concluir a obra do piso do Monviso", "area": "Chalés", "notas": [0, 0, 2, 1, 1], "custo": "$$", "obs": "Obra em andamento", "status": "Em andamento", "valor": null, "quando": "", "pri": 3}, {"id": "p1", "t": "Contratar a nova fossa e trocar as portas do alojamento dos funcionários", "area": "Infraestrutura", "notas": [1, 3, 1, 0, 2], "custo": "$$$", "obs": "Fossa: problema ativo com vizinho. Portas do alojamento da equipe.", "status": "A fazer", "valor": null, "quando": "", "pri": 4}, {"id": "p2", "t": "Manutenção do deck da piscina", "area": "Infraestrutura", "notas": [3, 1, 2, 1, 3], "custo": "$$$", "obs": "Vigas soltas: risco de acidente", "status": "A fazer", "valor": null, "quando": "", "pri": 5}, {"id": "p3", "t": "Varal externo", "area": "Operação", "notas": [0, 0, 0, 0, 1], "custo": "$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p5", "t": "Infiltração do alojamento", "area": "Equipe", "notas": [1, 1, 0, 0, 3], "custo": "$$", "obs": "Piora com o tempo", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p6", "t": "Iluminação externa (cascata, pergolado, caminhos, novos pontos)", "area": "Experiência", "notas": [2, 0, 3, 1, 0], "custo": "$$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p7", "t": "Retrofit dos chalés antigos e de baixa procura", "area": "Receita", "notas": [0, 0, 3, 3, 1], "custo": "$$$$", "obs": "RevPAR de Cheverny e Monblanc", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p8", "t": "Lareira externa inacabada do Everest", "area": "Experiência", "notas": [1, 0, 2, 1, 0], "custo": "$$", "obs": "Concluir ou desfazer", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p9", "t": "Banheira do Martigny (queimada por hóspede)", "area": "Manutenção", "notas": [0, 0, 3, 2, 1], "custo": "$", "obs": "Cobrar do hóspede, se possível", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p10", "t": "Filtro de água na caixa d'água", "area": "Saúde", "notas": [2, 1, 1, 0, 1], "custo": "$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p11", "t": "Limpeza da caixa d'água", "area": "Saúde", "notas": [2, 2, 1, 0, 0], "custo": "$", "obs": "Recomendado a cada 6 meses", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p12", "t": "Micro-ondas do Martigny", "area": "Reposição", "notas": [0, 0, 2, 1, 0], "custo": "$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p13", "t": "2ª cama de casal do Monviso", "area": "Reposição", "notas": [0, 0, 2, 1, 1], "custo": "$$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p14", "t": "Câmeras no estacionamento superior", "area": "Segurança", "notas": [3, 0, 1, 0, 1], "custo": "$", "obs": "Ampliar o sistema renovado", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p15", "t": "Canteiros e embelezamento externo", "area": "Experiência", "notas": [0, 0, 3, 1, 0], "custo": "$–$$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p16", "t": "Reforma da recepção e do salão", "area": "Experiência", "notas": [0, 0, 3, 1, 1], "custo": "$$$$", "obs": "", "status": "A fazer", "valor": null, "quando": "", "pri": null}, {"id": "p17", "t": "Reforma da piscina", "area": "Experiência", "notas": [1, 0, 3, 2, 2], "custo": "$$$$", "obs": "Avaliar junto com o deck", "status": "A fazer", "valor": null, "quando": "", "pri": null}]},
+    cenarios: [{"nome": "Conservador", "occ": 24.0, "adr": 1053, "premissa": "Ocupação de 24%: repõe só parte da longa estadia com vendas normais; diária de 2026 sem a longa estadia, sem reajuste.", "diarias": 613, "bruta": 662021, "rl": 639159, "custos": 487722, "eb": 151437, "mg": 23.7, "finex_capex": 80000, "caixa": 71437}, {"nome": "Base", "occ": 26.0, "adr": 1085, "premissa": "Repete a ocupação total de 2026 (26%), trocando a longa estadia por vendas normais; diária 3% acima da de 2026 sem a longa estadia.", "diarias": 664, "bruta": 738984, "rl": 713464, "custos": 508783, "eb": 204682, "mg": 28.7, "finex_capex": 80000, "caixa": 124682}, {"nome": "Otimista", "occ": 30.0, "adr": 1137, "premissa": "Ocupação de 30%, com mais vendas na baixa temporada; diária 8% acima da de 2026 sem a longa estadia.", "diarias": 766, "bruta": 893539, "rl": 862682, "custos": 551077, "eb": 311606, "mg": 36.1, "finex_capex": 80000, "caixa": 231606}],
+    anexos: {"pdf": "HSA - Relatório Gerencial - Out2026.pdf", "anexos": [{"letra": "A", "titulo": "Pessoal", "desc": "equipe, encargos, diaristas e massagista", "paginas": "24"}, {"letra": "B", "titulo": "Preços", "desc": "descontos, comissões, antecedência e permanência", "paginas": "25–26"}, {"letra": "C", "titulo": "Utilidades e energia solar", "desc": "contas, origem da energia e economia", "paginas": "27–29"}, {"letra": "D", "titulo": "Água", "desc": "consumo, tarifa e vazamentos", "paginas": "30"}, {"letra": "E", "titulo": "Gás", "desc": "consumo, preço × mercado e alternativas de aquecimento", "paginas": "31–32"}, {"letra": "F", "titulo": "Regras e cálculos", "desc": "como cada número é calculado", "paginas": "33"}, {"letra": "G", "titulo": "Boas práticas e próximos passos", "desc": "o que já está em vigor e o que falta", "paginas": "34"}]},
     atualizadoEm: '2026-11-26', atualizadoPor: 'Gustavo'
   };
   // Limites dos alertas automáticos
@@ -13291,6 +13360,7 @@ const relView = (() => {
   const pc = (v,d=0) => sg(v)+(d?nf1:nf0).format(Math.abs(v))+'%';
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
+  let PG = 'rel', bodyPg = null, PACE14 = [], AX = { pdf:null, name:'', lib:null };
   let D = null, loadedAt = 0, loading = false, st = null, PACE = [], CFG = JSON.parse(JSON.stringify(DEFAULT_CFG)), cfgFromFile = false, editing = null;
   const now = () => new Date();
   const curY = () => now().getFullYear(), curMo = () => now().getMonth()+1;
@@ -13365,13 +13435,16 @@ const relView = (() => {
 <section class="rel-sec" id="rel-s-util"><h2>Utilidades</h2><p class="rel-lead">Água, energia elétrica e gás · custo total da pousada e custo por diária vendida</p><div class="rel-wf" id="rel-utl"></div><div class="rel-note" id="rel-n-ut"></div><div class="rel-st" style="margin-top:8px">${esc(UTIL_NOTE)}</div></section>
 <section class="rel-sec rel-wide" id="rel-s-alertas"><h2>Pontos de atenção</h2><p class="rel-lead">Calculados automaticamente com os dados de hoje e o período escolhido</p><ul class="rel-list" id="rel-alerts"></ul></section>
 <section class="rel-sec" id="rel-s-metas"><h2>Metas</h2><p class="rel-lead" id="rel-l-met"></p><div class="rel-wf" id="rel-met"></div><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="metas">✏️ Editar metas</button></div><div id="rel-ed-metas"></div></section>
-<section class="rel-sec" id="rel-s-pri"><h2>Prioridades</h2><p class="rel-lead" id="rel-l-pri"></p><ul class="rel-list" id="rel-pri"></ul><div class="rel-edrow"><button class="rel-btn" type="button" data-ed="pri">✏️ Editar prioridades</button></div><div id="rel-ed-pri"></div><div class="rel-st" id="rel-cfgmsg" role="status"></div></section>
+<section class="rel-sec" id="rel-s-pri"><h2>Prioridades</h2><p class="rel-lead" id="rel-l-pri"></p><ul class="rel-list" id="rel-pri"></ul><div class="rel-edrow"><button class="rel-btn" type="button" data-go="plano">✏️ Editar no Plano e Projetos</button></div><div id="rel-ed-pri"></div><div class="rel-st" id="rel-cfgmsg" role="status"></div></section>
 </div>
 <footer class="rel-foot">Valores por competência, calculados ao vivo a partir de hsa_reservas.json e hsa_gastos.json, com as mesmas regras do relatório mensal. Resultado operacional = receita líquida − comissões e cartão − OPEX. Geração de caixa = resultado operacional − CAPEX − FINEX. Comparação sempre com os mesmos meses do ano anterior. Mês ainda não fechado: números parciais (podem faltar receitas, custos, comissões e o DAS; comissão do Booking estimada até a fatura).</footer>`;
 
   function render(){
     if (!D) return;
-    if (!$('rel-kpis')) $('rel-body').innerHTML = BODY;
+    $('view-relatorio').dataset.pg = PG;
+    if (PG !== 'rel') return renderOther();
+    if (bodyPg !== 'rel'){ $('rel-body').innerHTML = BODY; bodyPg = 'rel'; }
+    $('rel-pdf').hidden = false;
     const y=st.y, ms=st.ms, A=agg(y,ms), hasB=years().includes(y-1), B=hasB?agg(y-1,ms):null;
     const pl=plabel(y,ms), pv=B?(k=>B[k]):(()=>undefined);
     $('rel-eb').textContent='Relatório de resultados · '+pl;
@@ -13497,8 +13570,13 @@ const relView = (() => {
     $('rel-l-met').textContent=`Real × meta · ${keys.length} ${keys.length>1?'meses':'mês'} com meta no período`+(keys.some(k=>isOpen(+k.slice(0,4),+k.slice(5,7)))?' · inclui mês não fechado':'');
     $('rel-met').innerHTML=prog('Ocupação',A.occ,occM,v=>pc(v))+prog('Diária média',A.adr,adrM,rs)+prog('Faturamento',A.bruta,mbr,mil)+prog('Resultado operacional',A.eb,meb,mil);
   }
+  function priList(){
+    const pl=CFG.plano||{}; const it=[...(pl.acoes||[]),...(pl.projetos||[])].filter(x=>x.pri&&x.status!=='Feito').sort((a,b)=>(+a.pri)-(+b.pri)||String(a.id).localeCompare(String(b.id)));
+    const g=[]; for (const x of it){ const last=g[g.length-1]; if(last&&last.pri===+x.pri) last.items.push(x); else g.push({pri:+x.pri,items:[x]}); }
+    return g.map(G=>({t:G.items.map(x=>x.t).join(' + '),d:G.items.length===1?(G.items[0].resumo||(G.items[0].notas?G.items[0].obs:'')||''):''}));
+  }
   function renderPri(){
-    const P=CFG.prioridades||[];
+    const P=priList();
     $('rel-l-pri').textContent=CFG.atualizadoEm?`Atualizadas em ${new Date(CFG.atualizadoEm+'T12:00').toLocaleDateString('pt-BR')}${CFG.atualizadoPor?' por '+CFG.atualizadoPor:''}`:'';
     $('rel-pri').innerHTML=P.length?P.map((p,i)=>`<li><b>${i+1}. ${esc(p.t)}</b>${p.d?`<span>${esc(p.d)}</span>`:''}</li>`).join(''):'<li><span>Nenhuma prioridade cadastrada.</span></li>';
   }
@@ -13525,24 +13603,35 @@ const relView = (() => {
     else { const Y=+$('rel-my').value; if(!(Y>2000)) return; novo.metas=novo.metas||{};
       MN.forEach((l,i)=>{const r={};let any=false;for(const f of ['occ','adr','bruta','eb']){const v=$(`rel-m-${i}-${f}`).value.replace(/\./g,'').replace(',','.').trim();if(v!==''&&isFinite(+v)){r[f]=+v;any=true;}}
         if(any) novo.metas[key(Y,i+1)]=r; else delete novo.metas[key(Y,i+1)];}); novo.metasEditadas=true; }
+    if (await persist(novo)) box.innerHTML='';
+  }
+  async function persist(novo){
+    const msg=()=>$('rel-cfgmsg'); if(msg()) msg().textContent='Salvando…';
     let quem=''; try{quem=JSON.parse(localStorage.getItem('hsa_auth')||'{}').nome||''}catch(e){}
     const t=new Date(); novo.atualizadoEm=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); novo.atualizadoPor=quem;
-    msg.textContent='Salvando…';
+    const out=JSON.parse(JSON.stringify(novo)); delete out.cenarios; delete out.anexos; delete out.prioridades;
     try{
-      const r=await dbxFetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:CFG_PATH,mode:'overwrite',mute:true})},body:JSON.stringify(novo,null,2)});
+      const r=await dbxFetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:CFG_PATH,mode:'overwrite',mute:true})},body:JSON.stringify(out,null,2)});
       if(!r.ok) throw new Error('Dropbox '+r.status);
-      CFG=novo; cfgFromFile=true; box.innerHTML=''; editing=null; msg.textContent='Salvo. Todos que abrirem o painel já veem a nova versão.'; render();
-    }catch(e){ msg.textContent='Não consegui salvar ('+e.message+'). Nada foi alterado.'; }
+      CFG=novo; cfgFromFile=true; editing=null; render(); if(msg()) msg().textContent='Salvo. Todos que abrirem o painel já veem a nova versão.'; return true;
+    }catch(e){ if(msg()) msg().textContent='Não consegui salvar ('+e.message+'). Nada foi alterado.'; return false; }
   }
   function onEdit(e){
     const b=e.target.closest('button'); if(!b) return;
-    if (b.dataset.ed){ openEditor(b.dataset.ed); }
+    if (b.dataset.go){ go(b.dataset.go); }
+    else if (b.dataset.ed){ openEditor(b.dataset.ed); }
+    else if (b.dataset.pe){ planoEdit(b.dataset.pe); }
+    else if (b.dataset.pnew){ planoEdit('new:'+b.dataset.pnew); }
+    else if (b.dataset.psave){ planoSave(b.dataset.psave); }
+    else if (b.dataset.pdel){ if(b.dataset.armed){ planoDel(b.dataset.pdel); } else { b.dataset.armed='1'; b.textContent='Confirmar exclusão'; } }
+    else if (b.dataset.pcancel!==undefined){ editing=null; render(); }
+    else if (b.dataset.ax){ showAnexo(+b.dataset.ax); }
     else if (b.dataset.save){ saveCfg(b.dataset.save); }
     else if (b.dataset.cancel){ $('rel-ed-'+b.dataset.cancel).innerHTML=''; editing=null; }
   }
   async function fetchCfg(){
     try{ const r=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:CFG_PATH})}});
-      if (r.status===409||r.status===404) return; if(!r.ok) return; const c=await r.json(); if(c&&typeof c==='object'){ const d=JSON.parse(JSON.stringify(DEFAULT_CFG)); CFG=Object.assign(d,c); if(!c.metasEditadas) CFG.metas=d.metas; cfgFromFile=true; } }catch(e){}
+      if (r.status===409||r.status===404) return; if(!r.ok) return; const c=await r.json(); if(c&&typeof c==='object'){ const d=JSON.parse(JSON.stringify(DEFAULT_CFG)); CFG=Object.assign(d,c); if(!c.metasEditadas) CFG.metas=d.metas; if(!c.plano) CFG.plano=d.plano; CFG.cenarios=d.cenarios; CFG.anexos=d.anexos; cfgFromFile=true; } }catch(e){}
   }
   function drawFilter(){
     const y=st.y, L=lastMo(y), C=closedMo(y);
@@ -13566,7 +13655,7 @@ const relView = (() => {
       if (!R || !G){ $('rel-err').innerHTML='<div class="rel-err">Não consegui baixar os dados do Dropbox ('+esc(e.message)+'). Confira a conexão e toque em Atualizar dados.</div>'; $('rel-upd').textContent='Sem dados'; loading=false; return; }
       $('rel-err').innerHTML='<div class="rel-err">Não consegui baixar os dados agora; mostrando a '+fonte+'.</div>';
     }
-    try { D = relCompute(R, G); PACE = relPace(R); loadedAt = Date.now(); }
+    try { D = relCompute(R, G); PACE14 = relPace(R, undefined, 14); PACE = PACE14.slice(0,2); loadedAt = Date.now(); }
     catch(e){ $('rel-err').innerHTML='<div class="rel-err">Erro ao calcular o relatório: '+esc(e.message)+'</div>'; loading=false; return; }
     if (!st) st = loadState(); if (!years().includes(st.y)) st = defState();
     const t=new Date(); $('rel-upd').textContent=`Dados de ${t.toLocaleDateString('pt-BR')} às ${t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${R.length} reservas · ${G.length} lançamentos`;
@@ -13603,8 +13692,228 @@ const relView = (() => {
       msg.textContent=f.name+' · atualizado em '+new Date(f.server_modified).toLocaleDateString('pt-BR');
     }catch(e){ msg.textContent='Não consegui baixar o PDF ('+e.message+').'; }
   }
+  // ================= outras páginas (abas Sumário executivo, Plano e Projetos, Metas, Anexos) =================
+  const PAGES = { rel:{tab:'relatorio'}, sum:{tab:'sumario'}, plano:{tab:'plano'}, metas:{tab:'metas27'}, anexos:{tab:'anexos'} };
+  function go(pg){ window._relPage=pg; if (typeof goView==='function') goView('relatorio', $('ptab-'+PAGES[pg].tab)); else open(pg); }
+  const dot = c => `<span class="rel-dot2 ${c}" aria-hidden="true"></span>`;
+  const STL = { g:'no caminho certo', y:'pede atenção', r:'exige ação', b:'meta' };
+  const vtxt = (a,b,dec=0) => { const v=vr(a,b); if (v===null) return ''; return (v>=0?'+':'−')+(dec?nf1:nf0).format(Math.abs(v))+'%'; };
+  const pptxt = (a,b) => { const d=a-b; return (d>=0?'+':'−')+nf1.format(Math.abs(d))+' p.p.'; };
+  function renderOther(){
+    if (bodyPg !== PG){ $('rel-body').innerHTML = `<div id="rel-pbody"></div><div class="rel-st" id="rel-cfgmsg" role="status"></div>`; bodyPg = PG; }
+    $('rel-pdf').hidden = PG==='anexos';
+    if (PG==='sum') renderSum(); else if (PG==='plano') renderPlano(); else if (PG==='metas') renderMetas27(); else renderAnexos();
+  }
+  // ---------- Sumário executivo ----------
+  function renderSum(){
+    const y=st.y, ms=st.ms, A=agg(y,ms), hasB=years().includes(y-1), B=hasB?agg(y-1,ms):null, pl=plabel(y,ms);
+    $('rel-eb').textContent='Sumário executivo · '+pl;
+    const openSel = ms.some(m=>isOpen(y,m));
+    $('rel-pnote').innerHTML = (B?`Comparação com ${esc(plabel(y-1,ms))}.`:'Sem comparação: não há dados do ano anterior.') + (openSel?` <b>Inclui ${MN[curMo()-1].toLowerCase()}/${String(y).slice(2)}, mês ainda não fechado:</b> números parciais.`:'');
+    const T=[]; const sec=(t)=>{T.push({sec:t});}; const add=(ind,vb,va,c,lei)=>T.push({ind,vb,va,c,lei});
+    const Y1=B?String(y-1):'';
+    // resultado
+    sec('Resultado');
+    add('Resultado operacional',B?mil(B.eb):'–',mil(A.eb),A.eb<=0?'r':(B&&A.eb<B.eb?'y':'g'),
+      B?(B.eb>0&&A.eb/B.eb>=2?`${nf1.format(A.eb/B.eb)} vezes o de ${y-1}`:(B.eb<=0&&A.eb>0?`virou positivo (${y-1}: ${mil(B.eb)})`:`${vtxt(A.eb,B.eb)} sobre ${y-1}`)):'');
+    add('Margem operacional',B?pc(B.mg,1):'–',pc(A.mg,1),A.mg>=20?'g':(A.mg>=10?'y':'r'),(A.mg>=20?'na faixa boa':A.mg>=10?'abaixo da faixa boa':'baixa')+' (referência: 20%)'+(B?' · '+pptxt(A.mg,B.mg):''));
+    const closed=ms.filter(m=>!isOpen(y,m)); const negA=closed.filter(m=>{const r=agg(y,[m]);return r&&r.eb<0;}); const negB=B?closed.filter(m=>{const r=agg(y-1,[m]);return r&&r.eb<0;}):[];
+    add('Meses com resultado negativo',B?`${negB.length} de ${closed.length}`:'–',`${negA.length} de ${closed.length}`,!negA.length?'g':(negA.length<=closed.length/3?'y':'r'),negA.length?negA.map(m=>MN[m-1]).join(', ')+' no negativo':'nenhum mês no negativo');
+    add('Geração de caixa',B?mil(B.fin):'–',mil(A.fin),A.fin>0.05*A.bruta?'g':(A.fin>=0?'y':'r'),`depois de CAPEX (${mil(A.capex)}) e FINEX (${mil(A.finex)})`);
+    // receita
+    sec('Receita e performance');
+    add('Diárias vendidas',B?nf0.format(B.noites):'–',nf0.format(A.noites),!B||A.noites>=B.noites?'g':(vr(A.noites,B.noites)>=-10?'y':'r'),`ocupação de ${pc(A.occ)}`+(B?` (${pptxt(A.occ,B.occ)})`:''));
+    const da=A.longa_n>0?A.adrsl:A.adr, db=B?(B.longa_n>0?B.adrsl:B.adr):0, sl=A.longa_n>0||(B&&B.longa_n>0);
+    add('Diária média'+(sl?' sem a longa estadia':''),B?rs(db):'–',rs(da),!B||da>=db?'g':(vr(da,db)>=-3?'y':'r'),(B?vtxt(da,db)+' · ':'')+`desconto médio de ${pc(A.descp,1)}`);
+    const tot=X=>['Direto','Booking','Agências'].reduce((s,c)=>s+(X.cn[c]?X.cn[c][0]:0),0)||1;
+    const bkA=100*(A.cn.Booking?A.cn.Booking[0]:0)/tot(A), bkB=B?100*(B.cn.Booking?B.cn.Booking[0]:0)/tot(B):0;
+    add('Participação do Booking',B?pc(bkB):'–',pc(bkA),bkA<40?'g':(bkA<=55?'y':'r'),(B?pptxt(bkA,bkB)+' · ':'')+`direto com ${pc(100*(A.cn.Direto?A.cn.Direto[0]:0)/tot(A))} das diárias`);
+    add('RevPAR',B?rs(B.rev):'–',rs(A.rev),!B?'g':(vr(A.rev,B.rev)>=5?'g':(vr(A.rev,B.rev)>=0?'y':'r')),`líquido ${rs(A.revliq)} · equilíbrio ${rs(A.eq)}`);
+    const occe=X=>X.revliq?X.occ*X.eq/X.revliq:0;
+    add('Ocupação de equilíbrio',B?pc(occe(B)):'–',pc(occe(A)),A.occ>=1.2*occe(A)?'g':(A.occ>=occe(A)?'y':'r'),`ocupação real de ${pc(A.occ)}`);
+    const lowCh=X=>{const L=Object.entries(X.ch).filter(([c,a])=>a[2]>0).map(([c,a])=>({c,rev:a[1]/a[2],occ:100*a[0]/a[2]})).sort((p,q)=>p.rev-q.rev);return L[0]||null;};
+    const la=lowCh(A), lb=B?lowCh(B):null;
+    if (la) add('Chalé com menor RevPAR',lb?`${lb.c} ${rs(lb.rev)}`:'–',`${la.c} ${rs(la.rev)}`,la.rev>=0.6*A.rev?'g':(la.rev>=0.4*A.rev?'y':'r'),`${pc(la.occ)} de ocupação · média da casa ${rs(A.rev)}`);
+    // custos
+    sec('Custos, investimentos e dívidas');
+    const vo=B?vr(A.opex,B.opex):null, vb=B?vr(A.bruta,B.bruta):null;
+    add('OPEX',B?mil(B.opex):'–',mil(A.opex),!B||vo<=vb?'g':(vo<=vb+5?'y':'r'),B?`${vtxt(A.opex,B.opex)} com faturamento ${vtxt(A.bruta,B.bruta)}`:'');
+    add('Custo por diária vendida',B?rs(B.cpd):'–',rs(A.cpd),!B||A.cpd<=B.cpd?'g':(vr(A.cpd,B.cpd)<=5?'y':'r'),B?vtxt(A.cpd,B.cpd)+` sobre ${y-1}`:'');
+    const pe=X=>X.bruta?100*(X.g['Pessoal']||0)/X.bruta:0; const top=Object.entries(A.g).sort((p,q)=>q[1]-p[1])[0];
+    add('Pessoal sobre o faturamento',B?pc(pe(B)):'–',pc(pe(A)),pe(A)<25?'g':(pe(A)<=35?'y':'r'),(B?pptxt(pe(A),pe(B))+' · ':'')+(top&&top[0]==='Pessoal'?'maior grupo de custo':''));
+    add('FINEX',B?mil(B.finex):'–',mil(A.finex),A.eb>0&&A.finex/A.eb<0.25?'g':(A.eb>0&&A.finex/A.eb<=0.5?'y':'r'),A.eb>0?`consome ${pc(100*A.finex/A.eb)} do resultado operacional`:'o resultado operacional não cobre o FINEX');
+    add('CAPEX',B?mil(B.capex):'–',mil(A.capex),A.capex<=Math.max(0,A.eb-A.finex)?'g':'y',A.capex<=Math.max(0,A.eb-A.finex)?'coberto pelo resultado, depois do FINEX':'maior que o resultado depois do FINEX');
+    // utilidades
+    sec('Utilidades · custo por diária vendida');
+    for (const [k,l] of [['Água','Água'],['Energia','Energia elétrica'],['Gás','Gás']]){
+      const a=A.noites?(A.ut[k]||0)/A.noites:0, b=B&&B.noites?(B.ut[k]||0)/B.noites:0;
+      add(l,B?rs(b):'–',rs(a),!B||a<=b?'g':(vr(a,b)<=10?'y':'r'),`total de ${mil(A.ut[k]||0)}`+(B&&B.ut[k]?` (${vtxt(A.ut[k]||0,B.ut[k])})`:''));
+    }
+    // próximos meses
+    sec('Próximos meses');
+    const MNl=m=>MN[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+    for (const p of PACE){
+      const c=p.prev<ALERT.paceMin?(p.cur>0?'g':'y'):(p.cur>=p.prev?'g':(p.cur>=ALERT.pace*p.prev?'y':'r'));
+      add(`Reservas de ${MNl(p.m)} até hoje`,`${nf0.format(p.prev)} ${p.prev===1?'diária':'diárias'}`,`${nf0.format(p.cur)} ${p.cur===1?'diária':'diárias'}`,c,`contra o mesmo ponto de ${+p.m.slice(0,4)-1}`+(p.prev?` (${vtxt(p.cur,p.prev)})`:''));
+    }
+    const M=CFG.metas||{}; const keys=ms.map(m=>key(y,m)).filter(k=>M[k]&&!isOpen(y,+k.slice(5,7))&&D[k]);
+    if (keys.length){ const R=agg(y,keys.map(k=>+k.slice(5,7))); const meb=keys.reduce((s,k)=>s+(+M[k].eb||0),0); const p=meb>0?100*R.eb/meb:0;
+      add('Meta de resultado operacional',mil(meb),mil(R.eb),p>=100?'g':(p>=80?'y':'r'),`${nf0.format(p)}% da meta nos ${keys.length} ${keys.length>1?'meses':'mês'} com meta`); }
+    else { const ano=Object.keys(M).map(k=>+k.slice(0,4)).filter(a=>a>y).sort()[0];
+      if (ano){ const ks=Object.keys(M).filter(k=>k.startsWith(ano+'-')); let cap=0,n=0,h=0; for(const k of ks){const c=7*new Date(ano,+k.slice(5,7),0).getDate();cap+=c;const nn=c*(+M[k].occ||0)/100;n+=nn;h+=nn*(+M[k].adr||0);}
+        add(`Meta ${ano}: resultado operacional`,'–',mil(ks.reduce((s,k)=>s+(+M[k].eb||0),0)),'b',`${pc(cap?100*n/cap:0)} de ocupação, diária ${rs(n?h/n:0)}`); } }
+    const cnt={g:0,y:0,r:0}; T.forEach(r=>{if(cnt[r.c]!==undefined) cnt[r.c]++;});
+    $('rel-h1').textContent=`${cnt.g} indicadores no caminho certo, ${cnt.y} pedem atenção, ${cnt.r} exigem ação`;
+    $('rel-hp').textContent=`Resultado operacional de ${mil(A.eb)}, margem de ${pc(A.mg)} e geração de caixa de ${mil(A.fin)} em ${pl.toLowerCase().replace(/^ano/,'ano')}.`;
+    const rows=T.map(r=>r.sec?`<div class="rel-sch">${esc(r.sec)}</div>`:`<div class="rel-scr"><div class="rel-sci">${dot(r.c)}<b>${esc(r.ind)}</b></div><div class="rel-scv o">${esc(r.vb)}</div><div class="rel-scv">${esc(r.va)}</div><div class="rel-scl">${esc(r.lei)}</div></div>`).join('');
+    const P=priList();
+    $('rel-pbody').innerHTML=`<div class="rel-grid">
+<section class="rel-sec rel-wide"><h2>Indicadores por tema</h2><p class="rel-lead">${esc(pl)}${B?' × mesmos meses de '+(y-1):''} · a cor sai de regras fixas, calculadas ao vivo</p>
+<div class="rel-sc"><div class="rel-scr rel-sch2"><div>Indicador</div><div class="rel-scv o">${Y1}</div><div class="rel-scv">${y}</div><div class="rel-scl">Leitura</div></div>${rows}</div>
+<div class="rel-leg">${['g','y','r','b'].map(c=>`<span>${dot(c)}${STL[c]}</span>`).join('')}</div>
+<div class="rel-st" style="margin-top:8px">Energia solar (economia × proposta), água em m³ e preço do kg do gás dependem de leituras manuais e ficam no relatório mensal em PDF.</div></section>
+<section class="rel-sec rel-wide"><h2>Prioridades</h2><p class="rel-lead">Ações e projetos marcados como prioridade na aba Plano e Projetos</p><ul class="rel-list">${P.length?P.map((p,i)=>`<li><b>${i+1}. ${esc(p.t)}</b>${p.d?`<span>${esc(p.d)}</span>`:''}</li>`).join(''):'<li><span>Nenhuma prioridade marcada.</span></li>'}</ul><div class="rel-edrow"><button class="rel-btn" type="button" data-go="plano">✏️ Editar no Plano e Projetos</button></div></section>
+</div><footer class="rel-foot">Regras das cores: margem (≥ 20% verde, 10–20% amarelo), FINEX (até 25% do resultado verde, até 50% amarelo), ocupação acima de 1,2 × a de equilíbrio (verde), custos e diária contra o ano anterior, reservas contra o mesmo ponto do ano anterior (abaixo de 70%: vermelho).</footer>`;
+    drawFilter(); try{localStorage.setItem('hsa-rel-filtro',JSON.stringify(st))}catch(e){}
+  }
+  // ---------- Plano e Projetos ----------
+  const CRIT=[['Seg','Segurança',3],['Leg','Risco legal e vizinhança',2],['Exp','Experiência do hóspede',2],['Fat','Faturamento',2],['Cus','Custo evitado',2]];
+  const COST={'$':1,'$–$$':1.5,'$$':2,'$$$':3,'$$$$':4}, COSTL={'$':'até R$ 2 mil','$–$$':'R$ 1–5 mil','$$':'R$ 2–10 mil','$$$':'R$ 10–30 mil','$$$$':'acima de R$ 30 mil'};
+  const STATUS=['A fazer','Em andamento','Aguardando','Feito'];
+  const nota=p=>(p.notas||[]).reduce((s,v,i)=>s+(+v||0)*CRIT[i][2],0);
+  function classe(p){ const sc=nota(p), s=p.notas||[];
+    if ((+s[0])>=3||(+s[1])>=3||sc>=18) return ['Fazer já','r']; if (sc>=10&&COST[p.custo]<=1.5) return ['Ganho rápido','g'];
+    if (sc>=12) return ['1º semestre','y']; if (sc>=8) return ['2º semestre','b']; return ['Avaliar','n']; }
+  const stc=s=>({'A fazer':'n','Em andamento':'b','Aguardando':'y','Feito':'g'}[s]||'n');
+  function renderPlano(){
+    const pl=CFG.plano||{acoes:[],projetos:[]}; const A=pl.acoes||[], P=pl.projetos||[];
+    const abertas=A.filter(x=>x.status!=='Feito'), feitasA=A.filter(x=>x.status==='Feito');
+    const pab=P.filter(x=>x.status!=='Feito').sort((a,b)=>nota(b)-nota(a)), feitosP=P.filter(x=>x.status==='Feito');
+    $('rel-eb').textContent='Plano de ação e projetos'+(CFG.atualizadoEm?' · atualizado em '+new Date(CFG.atualizadoEm+'T12:00').toLocaleDateString('pt-BR'):'');
+    $('rel-h1').textContent=`${abertas.length} ações e ${pab.length} projetos em aberto`;
+    const inv=pab.filter(x=>+x.valor>0).reduce((s,x)=>s+(+x.valor),0);
+    $('rel-hp').textContent=`${A.concat(P).filter(x=>x.status==='Em andamento').length} em andamento · ${pab.filter(p=>classe(p)[0]==='Fazer já').length} projetos para fazer já`+(inv?` · ${mil(inv)} em orçamentos`:'')+'. O relatório mensal usa esta mesma lista.';
+    const pri=x=>x.pri?`<span class="rel-pri">${+x.pri}</span>`:'';
+    const ed=id=>editing===id?planoForm(id):'';
+    const aRow=(x,i)=>`<div class="rel-pi${x.status==='Feito'?' done':''}"><div class="rel-pih"><span class="rel-ix">${i}</span>${pri(x)}<b>${esc(x.t)}</b><span class="rel-tag ${stc(x.status)}">${esc(x.status||'A fazer')}</span><button class="rel-btn rel-sm" type="button" data-pe="${esc(x.id)}" aria-label="Editar ${esc(x.t)}">✏️</button></div>
+      ${x.d?`<div class="rel-pid">${esc(x.d)}</div>`:''}<div class="rel-pim">${[x.efeito?'Efeito: '+esc(x.efeito):'',x.quando?'Quando: '+esc(x.quando):'',x.resp?'Responsável: '+esc(x.resp):''].filter(Boolean).join(' · ')}</div>${ed(x.id)}</div>`;
+    const pRow=(x,i)=>{const [cl,cc]=classe(x), sc=nota(x);return `<div class="rel-pi${x.status==='Feito'?' done':''}"><div class="rel-pih"><span class="rel-ix">${i}</span>${pri(x)}<b>${esc(x.t)}</b><span class="rel-tag ${cc}">${cl}</span><span class="rel-tag ${stc(x.status)}">${esc(x.status||'A fazer')}</span><button class="rel-btn rel-sm" type="button" data-pe="${esc(x.id)}" aria-label="Editar ${esc(x.t)}">✏️</button></div>
+      <div class="rel-pim">${esc(x.area||'')}${x.obs?' · '+esc(x.obs):''}</div><div class="rel-pis"><span class="rel-nb"><i style="width:${(100*sc/33).toFixed(0)}%"></i></span><b>nota ${sc}</b><span>custo ${esc(x.custo||'')} (${esc(COSTL[x.custo]||'')})</span>${+x.valor>0?`<span>orçado ${rs(+x.valor)}</span>`:''}${x.quando?`<span>quando: ${esc(x.quando)}</span>`:''}</div>${ed(x.id)}</div>`};
+    const newA=editing==='new:acao'?planoForm('new:acao'):'', newP=editing==='new:projeto'?planoForm('new:projeto'):'';
+    const done=(L,f,lab)=>L.length?`<details class="rel-done"><summary>${lab} (${L.length})</summary>${L.map((x,i)=>f(x,'✓')).join('')}</details>`:'';
+    $('rel-pbody').innerHTML=`<div class="rel-grid">
+<section class="rel-sec rel-wide"><h2>Prioridades</h2><p class="rel-lead">Itens com número de prioridade (1, 2, 3…). Aparecem no Relatório, no Sumário executivo e no PDF. Itens com o mesmo número saem juntos.</p><ul class="rel-list">${priList().map((p,i)=>`<li><b>${i+1}. ${esc(p.t)}</b>${p.d?`<span>${esc(p.d)}</span>`:''}</li>`).join('')||'<li><span>Nenhuma prioridade marcada.</span></li>'}</ul></section>
+<section class="rel-sec rel-wide"><h2>Plano de ação</h2><p class="rel-lead">O que fazer com os números do relatório · página Recomendações do PDF</p>${abertas.map((x,i)=>aRow(x,i+1)).join('')}${newA}<div class="rel-edrow"><button class="rel-btn" type="button" data-pnew="acao">+ Nova ação</button></div>${done(feitasA,aRow,'Ações concluídas')}</section>
+<section class="rel-sec rel-wide"><h2>Projetos e investimentos</h2><p class="rel-lead">Ordenados pela nota de impacto (máx. 33) · página Projetos do PDF. "Fazer já" = segurança ou risco legal máximo, ou nota ≥ 18.</p>${pab.map((x,i)=>pRow(x,i+1)).join('')}${newP}<div class="rel-edrow"><button class="rel-btn" type="button" data-pnew="projeto">+ Novo projeto</button></div>${done(feitosP,pRow,'Projetos concluídos')}
+<h3>Impacto × custo</h3>${matriz(pab)}</section>
+</div><footer class="rel-foot">Salvo em hsa_relatorio_config.json no Dropbox, o mesmo arquivo das metas. Critérios da nota: ${CRIT.map(c=>`${c[1]} (peso ${c[2]})`).join(', ')}; cada um de 0 a 3.</footer>`;
+    const f=$('rel-pform'); if (f) f.scrollIntoView({block:'nearest'});
+  }
+  function matriz(L){
+    const w=640,h=300,pl=40,pb=30,pt=12,pr=12,iw=w-pl-pr,ih=h-pt-pb;
+    const pts=L.map((p,i)=>({i:i+1,p,sc:nota(p),cx:COST[p.custo]||2,c:classe(p)[1]})), grp={};
+    pts.forEach(o=>{const k=o.cx+'|'+Math.round(o.sc/2.5);(grp[k]=grp[k]||[]).push(o);}); Object.values(grp).forEach(G=>G.forEach((o,j)=>o.dx=(j-(G.length-1)/2)*18));
+    const X=o=>pl+iw*(o.cx-0.5)/4+o.dx, Y=o=>pt+ih*(1-Math.min(o.sc,33)/33);
+    return `<div class="rel-mx"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Projetos por nota de impacto e custo"><rect x="${pl}" y="${pt}" width="${iw/2}" height="${ih*23/33}" class="q1"/><rect x="${pl+iw/2}" y="${pt}" width="${iw/2}" height="${ih*23/33}" class="q2"/>
+<text x="${pl+6}" y="${pt+14}" class="ql g">GANHO RÁPIDO</text><text x="${pl+iw-6}" y="${pt+14}" text-anchor="end" class="ql y">PROJETO ESTRATÉGICO</text><text x="${pl+iw/2-6}" y="${pt+ih-6}" text-anchor="end" class="ax">fazer quando der</text><text x="${pl+iw-6}" y="${pt+ih-6}" text-anchor="end" class="ax">questionar</text>
+<line x1="${pl}" x2="${pl+iw}" y1="${pt+ih}" y2="${pt+ih}" class="axl"/><line x1="${pl}" x2="${pl}" y1="${pt}" y2="${pt+ih}" class="axl"/>
+${['$','$$','$$$','$$$$'].map((c,i)=>`<text x="${pl+iw*(i+0.5)/4}" y="${h-10}" text-anchor="middle" class="ax">${c}</text>`).join('')}<text x="14" y="${pt+ih/2}" transform="rotate(-90 14 ${pt+ih/2})" text-anchor="middle" class="ax">nota de impacto →</text>
+${pts.map(o=>`<g><circle cx="${X(o).toFixed(1)}" cy="${Y(o).toFixed(1)}" r="9" class="pt ${o.c}"><title>${esc(o.p.t)} · nota ${o.sc} · ${esc(o.p.custo)}</title></circle><text x="${X(o).toFixed(1)}" y="${(Y(o)+3.5).toFixed(1)}" text-anchor="middle" class="pn">${o.i}</text></g>`).join('')}</svg><div class="rel-st">Número = posição na lista acima · custo estimado no eixo horizontal.</div></div>`;
+  }
+  function findItem(id){ const pl=CFG.plano||{}; for (const t of ['acoes','projetos']){ const i=(pl[t]||[]).findIndex(x=>x.id===id); if(i>=0) return {t,i,x:pl[t][i]}; } return null; }
+  function planoEdit(id){ editing=id; render(); }
+  function planoForm(id){
+    const isNew=id.startsWith('new:'), tipo=isNew?(id==='new:acao'?'acoes':'projetos'):findItem(id).t, x=isNew?{status:'A fazer',notas:[0,0,0,0,0],custo:'$$'}:findItem(id).x;
+    const inp=(f,l,v,ph='')=>`<div class="rel-edi"><label for="rel-f-${f}">${l}</label><input id="rel-f-${f}" value="${esc(v??'')}" placeholder="${esc(ph)}"></div>`;
+    const sel=(f,l,opts,v)=>`<div class="rel-edi"><label for="rel-f-${f}">${l}</label><select id="rel-f-${f}">${opts.map(o=>`<option value="${esc(o[0])}"${String(o[0])===String(v??'')?' selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`;
+    const priO=[['','—'],...[1,2,3,4,5,6,7,8].map(n=>[n,String(n)])];
+    let h=`<div class="rel-ed" id="rel-pform"><div class="rel-edg">${inp('t','Título',x.t)}`;
+    if (tipo==='acoes') h+=`<div class="rel-edi rel-edw"><label for="rel-f-d">Detalhe</label><textarea id="rel-f-d" rows="3">${esc(x.d||'')}</textarea></div>${inp('efeito','Efeito estimado',x.efeito)}${inp('quando','Quando',x.quando,'ex.: até 05/12, 1º tri/27')}${inp('resp','Responsável',x.resp)}${inp('resumo','Resumo para as prioridades (opcional)',x.resumo)}`;
+    else h+=`${inp('area','Área',x.area)}${inp('obs','Observação',x.obs)}${CRIT.map((c,i)=>sel('n'+i,`${c[1]} (peso ${c[2]})`,[[0,'0 · nenhum'],[1,'1 · baixo'],[2,'2 · médio'],[3,'3 · alto']],(x.notas||[])[i]||0)).join('')}${sel('custo','Custo estimado',Object.keys(COST).map(k=>[k,k+' · '+COSTL[k]]),x.custo)}${inp('valor','Valor orçado (R$)',x.valor,'opcional')}${inp('quando','Quando',x.quando)}`;
+    h+=`${sel('status','Status',STATUS.map(s=>[s,s]),x.status||'A fazer')}${sel('pri','Prioridade',priO,x.pri||'')}</div>
+<div class="rel-edrow"><button class="rel-btn rel-save" type="button" data-psave="${esc(id)}">Salvar</button><button class="rel-btn" type="button" data-pcancel>Cancelar</button>${isNew?'':`<button class="rel-btn rel-del" type="button" data-pdel="${esc(id)}">Excluir</button>`}</div></div>`;
+    return h;
+  }
+  async function planoSave(id){
+    const v=f=>{const e=$('rel-f-'+f);return e?e.value.trim():undefined;}; if(!v('t')){ $('rel-f-t').focus(); return; }
+    const novo=JSON.parse(JSON.stringify(CFG)); novo.plano=novo.plano||{acoes:[],projetos:[]};
+    const isNew=id.startsWith('new:'), tipo=isNew?(id==='new:acao'?'acoes':'projetos'):findItem(id).t;
+    const L=novo.plano[tipo]=novo.plano[tipo]||[]; let x;
+    if (isNew){ x={id:(tipo==='acoes'?'a':'p')+Date.now().toString(36)}; L.push(x); } else x=L.find(o=>o.id===id);
+    x.t=v('t'); x.status=v('status'); x.pri=v('pri')?+v('pri'):null;
+    if (tipo==='acoes'){ x.d=v('d'); x.efeito=v('efeito'); x.quando=v('quando'); x.resp=v('resp'); x.resumo=v('resumo'); }
+    else { x.area=v('area'); x.obs=v('obs'); x.notas=CRIT.map((c,i)=>+v('n'+i)||0); x.custo=v('custo'); const val=(v('valor')||'').replace(/\./g,'').replace(',','.'); x.valor=val&&isFinite(+val)?+val:null; x.quando=v('quando'); }
+    await persist(novo);
+  }
+  async function planoDel(id){ const novo=JSON.parse(JSON.stringify(CFG)); for (const t of ['acoes','projetos']) novo.plano[t]=(novo.plano[t]||[]).filter(x=>x.id!==id); await persist(novo); }
+  // ---------- Metas ----------
+  function renderMetas27(){
+    const M=CFG.metas||{}; const anos=[...new Set(Object.keys(M).map(k=>+k.slice(0,4)))].sort(); const ano=anos.filter(a=>a>=curY()).pop()||anos.pop()||curY()+1;
+    const ks=MN.map((l,i)=>key(ano,i+1)); const capM=i=>7*new Date(ano,i+1,0).getDate();
+    let cap=0,n=0,h=0,br=0,eb=0; ks.forEach((k,i)=>{const m=M[k];if(!m)return;const c=capM(i);cap+=c;const nn=c*(+m.occ||0)/100;n+=nn;h+=nn*(+m.adr||0);br+=+m.bruta||0;eb+=+m.eb||0;});
+    $('rel-eb').textContent='Metas '+ano;
+    $('rel-h1').textContent=`Meta ${ano}: resultado operacional de ${mil(eb)}`;
+    $('rel-hp').textContent=`${pc(cap?100*n/cap:0)} de ocupação, diária média de ${rs(n?h/n:0)} e faturamento de ${mil(br)}, mês a mês pelo perfil sazonal.`;
+    const C=CFG.cenarios||[];
+    const cen=C.length?`<div class="rel-cen">${C.map(c=>`<div class="rel-card${c.nome==='Base'?' rel-base':''}"><div class="rel-kl">${esc(c.nome)}${c.nome==='Base'?' · referência das metas':''}</div><div class="rel-kv">${mil(c.eb)}</div><div class="rel-ks">resultado operacional · margem ${pc(c.mg)}</div><div class="rel-cl"><span>Ocupação</span><b>${pc(c.occ)}</b><span>Diária média</span><b>${rs(c.adr)}</b><span>Diárias vendidas</span><b>${nf0.format(c.diarias)}</b><span>Faturamento</span><b>${mil(c.bruta)}</b><span>Geração de caixa</span><b>${mil(c.caixa)}</b></div><div class="rel-st">${esc(c.premissa)}</div></div>`).join('')}</div><div class="rel-st">FINEX e CAPEX previstos de ${mil(C[0].finex_capex)} nos três cenários. Atualizado a cada fechamento do relatório.</div>`:'<div class="rel-st">Cenários ainda não gerados.</div>';
+    const pace=Object.fromEntries((PACE14||[]).map(p=>[p.m,p]));
+    let realN=0,realBr=0,realEb=0,metaBrC=0,metaEbC=0,mClosed=0;
+    const rows=ks.map((k,i)=>{const m=M[k]; if(!m) return ''; const r=D[k]; const closedM=r&&(ano<curY()||(ano===curY()&&i+1<curMo()));
+      const mn=capM(i)*(+m.occ||0)/100;
+      if (closedM){ const A=agg(ano,[i+1]); realN+=A.noites;realBr+=A.bruta;realEb+=A.eb;metaBrC+=+m.bruta||0;metaEbC+=+m.eb||0;mClosed++;
+        const p=+m.eb?A.eb/(+m.eb):0; const c=A.eb>=(+m.eb)?'g':(A.bruta>=0.9*(+m.bruta)?'y':'r');
+        return `<tr><td>${MN[i]}</td><td>${pc(+m.occ)}</td><td><b>${pc(A.occ)}</b></td><td>${rs(+m.adr)}</td><td><b>${rs(A.adr)}</b></td><td>${m1(+m.bruta)}</td><td><b>${m1(A.bruta)}</b></td><td>${m1(+m.eb)}</td><td><b>${m1(A.eb)}</b></td><td>${dot(c)}</td></tr>`; }
+      const pc_=pace[k]; const res=pc_?pc_.cur:(r&&isOpen(ano,i+1)?r.noites:null);
+      return `<tr class="fut"><td>${MN[i]}${isOpen(ano,i+1)?'*':''}</td><td>${pc(+m.occ)}</td><td>–</td><td>${rs(+m.adr)}</td><td>–</td><td>${m1(+m.bruta)}</td><td>–</td><td>${m1(+m.eb)}</td><td>–</td><td class="l">${res!==null&&res!==undefined?`<span class="rel-pace">${nf0.format(res)}</span> de ${nf0.format(mn)} diárias${mn>0?` (${nf0.format(100*res/mn)}%)`:''}`:'—'}</td></tr>`;}).join('');
+    const prog=(l,real,meta,fmt)=>{const p=meta>0?100*real/meta:0;const ok=p>=100;return `<div class="${ok?'r-pine':'r-sub'}"><div class="rel-wl"><span>${l}</span><b>${fmt(real)} <small class="neu">meta ${fmt(meta)}</small> <small class="${ok?'pos':'neg'}">${meta>0?nf0.format(p)+'%':''}</small></b></div>${bar(p)}</div>`};
+    const acc=mClosed?prog('Faturamento',realBr,metaBrC,mil)+prog('Resultado operacional',realEb,metaEbC,mil):`<div class="rel-st">O acompanhamento começa com janeiro de ${ano} fechado. Até lá, a tabela mostra quanto da meta de diárias de cada mês já está reservado.</div>`;
+    $('rel-pbody').innerHTML=`<div class="rel-grid">
+<section class="rel-sec rel-wide"><h2>Cenários ${ano}</h2><p class="rel-lead">Perspectivas do relatório: diária de ${ano-1} sem a longa estadia como base</p>${cen}</section>
+<section class="rel-sec rel-wide"><h2>Acumulado do ano</h2><p class="rel-lead">${mClosed?`Real × meta nos ${mClosed} ${mClosed>1?'meses fechados':'mês fechado'} de ${ano}`:'Ainda sem mês fechado'}</p><div class="rel-wf">${acc}</div></section>
+<section class="rel-sec rel-wide"><h2>Meta × realizado, mês a mês</h2><p class="rel-lead">Meses fechados: real em negrito e a cor da situação. Meses futuros: diárias já reservadas até hoje contra as diárias da meta (ocupação × 7 chalés × dias). Faturamento e resultado em R$ mil.</p>
+<div class="rel-tbl rel-mt27"><table><thead><tr><th>Mês</th><th>Ocup. meta</th><th>Real</th><th>Diária meta</th><th>Real</th><th>Fat. meta</th><th>Real</th><th>Res. meta</th><th>Real</th><th>Situação · reservado até hoje</th></tr></thead><tbody>${rows}</tbody></table></div>
+<div class="rel-edrow"><button class="rel-btn" type="button" data-ed="metas">✏️ Editar metas</button></div><div id="rel-ed-metas"></div></section>
+</div><footer class="rel-foot">Metas salvas em hsa_relatorio_config.json no Dropbox; o padrão é o cenário Base. Verde: resultado do mês na meta; amarelo: faturamento acima de 90% da meta; vermelho: abaixo disso.</footer>`;
+  }
+  // ---------- Anexos ----------
+  function renderAnexos(){
+    const S=CFG.anexos||{anexos:[]};
+    $('rel-eb').textContent='Anexos do relatório';
+    $('rel-h1').textContent='Anexos do último fechamento';
+    $('rel-hp').textContent=(S.pdf?`Páginas do ${S.pdf.replace(/\.pdf$/i,'')}, `:'')+'abertas direto do PDF salvo em Gerencial/Relatórios no Dropbox.';
+    $('rel-pbody').innerHTML=`<div class="rel-axb">${S.anexos.map((a,i)=>`<button class="rel-axbtn" type="button" data-ax="${i}" aria-pressed="false"><span class="l">${esc(a.letra)}</span><span><b>${esc(a.titulo)}</b><small>${esc(a.desc)}</small></span><span class="p">pág. ${esc(a.paginas)}</span></button>`).join('')}</div>
+<div class="rel-st" id="rel-axmsg" role="status"></div><div id="rel-axview"></div>
+<footer class="rel-foot">Os anexos dependem de dados lançados à mão (leituras de água, contas de energia e gás) e mostram a foto do mês fechado. O PDF completo também pode ser baixado no botão do topo das outras abas.</footer>`;
+    if (AX.cur!==undefined) showAnexo(AX.cur);
+  }
+  function loadScript(src){ return new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ko(new Error('não carregou '+src));document.head.appendChild(s);}); }
+  async function pdfBlob(){
+    const r=await dbxFetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:PDF_DIR})});
+    if(!r.ok) throw new Error('Dropbox '+r.status);
+    const L=(await r.json()).entries.filter(e=>e['.tag']==='file'&&/\.pdf$/i.test(e.name)); if(!L.length) throw new Error('nenhum PDF em Gerencial/Relatórios');
+    let pref=L.filter(e=>/relat.rio gerencial/i.test(e.name)); if(!pref.length) pref=L.filter(e=>/complet/i.test(e.name)); const f=(pref.length?pref:L).sort((a,b)=>String(b.server_modified).localeCompare(String(a.server_modified)))[0];
+    const d=await dbxFetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{'Dropbox-API-Arg':JSON.stringify({path:f.id})}});
+    if(!d.ok) throw new Error('Dropbox '+d.status); return {buf:await d.arrayBuffer(),name:f.name};
+  }
+  async function showAnexo(i){
+    const S=CFG.anexos||{anexos:[]}, a=S.anexos[i]; if(!a) return; AX.cur=i;
+    document.querySelectorAll('#view-relatorio .rel-axbtn').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.ax===i)));
+    const msg=$('rel-axmsg'), view=$('rel-axview'); if(!msg) return;
+    try{
+      if(!AX.lib){ msg.textContent='Carregando o leitor de PDF…'; await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; AX.lib=window.pdfjsLib; }
+      if(!AX.pdf){ msg.textContent='Baixando o relatório do Dropbox…'; const {buf,name}=await pdfBlob(); AX.name=name; AX.pdf=await AX.lib.getDocument({data:buf}).promise; }
+      const [p1,p2]=String(a.paginas).split(/[–-]/).map(Number); const pages=[]; for(let p=p1;p<=(p2||p1);p++) if(p<=AX.pdf.numPages) pages.push(p);
+      msg.textContent=`Anexo ${a.letra} · ${a.titulo} · ${AX.name.replace(/\.pdf$/i,'')}`+(S.pdf&&AX.name!==S.pdf?' (páginas conforme '+S.pdf.replace(/\.pdf$/i,'')+')':'');
+      view.innerHTML=''; const W=Math.min(view.clientWidth||900,1000), dpr=Math.min(window.devicePixelRatio||1,2);
+      for (const p of pages){ const pg=await AX.pdf.getPage(p); const vp0=pg.getViewport({scale:1}); const sc=W/vp0.width; const vp=pg.getViewport({scale:sc*dpr});
+        const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; c.style.width=W+'px'; c.style.height=(vp.height/dpr)+'px'; c.className='rel-axpg'; c.setAttribute('aria-label','Página '+p); view.appendChild(c);
+        await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; }
+    }catch(e){ msg.textContent='Não consegui abrir o anexo ('+e.message+').'; }
+  }
   let wired=false;
-  function open(){
+  function open(pg){
+    PG = PAGES[pg] ? pg : 'rel'; editing=null;
+    document.querySelectorAll('header .ptab').forEach(b=>b.classList.remove('on')); const tb=$('ptab-'+PAGES[PG].tab); if (tb) tb.classList.add('on');
     if (!wired){ wired=true; $('rel-filter').addEventListener('click',onFilter); $('rel-refresh').addEventListener('click',()=>load(true));
       $('rel-theme').addEventListener('click',()=>setTheme(!$('view-relatorio').classList.contains('rel-light')));
       $('rel-pdf').addEventListener('click',baixarPdf);
@@ -13612,7 +13921,7 @@ const relView = (() => {
       let t='escuro'; try{t=localStorage.getItem('hsa-rel-tema')||'escuro'}catch(e){} setTheme(t==='claro'); }
     load(false);
   }
-  return { open, _setData:(d,p)=>{D=d;PACE=p||[];st=st||loadState();render();} };
+  return { open, go, _setData:(d,p,cfg)=>{D=d;PACE14=p||[];PACE=PACE14.slice(0,2);if(cfg)Object.assign(CFG,cfg);st=st||loadState();render();} };
 })();
 
 </script>
