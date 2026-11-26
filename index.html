@@ -9425,7 +9425,7 @@ function forcarValidacao() {
   });
   calcularResultado();
 
-  goView('relatorio', document.getElementById('ptab-relatorio'));
+  goView('resultado', document.getElementById('ptab-resultado'));
   setTimeout(() => {
     renderCardValidacao();
     const card = document.getElementById('val-card');
@@ -11338,6 +11338,7 @@ async function iniciarDashboard() {
     ]);
 
     clearTimeout(loadingTimeout);
+    /*REL-INICIO*/ goView('relatorio', document.getElementById('ptab-relatorio'));
   } catch(e) {
     console.error('iniciarDashboard error:', e);
     esconderLoading();
