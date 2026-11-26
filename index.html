@@ -11342,7 +11342,7 @@ async function iniciarDashboard() {
     ]);
 
     clearTimeout(loadingTimeout);
-    /*REL-INICIO*/ window._relPage='rel'; goView('relatorio', document.getElementById('ptab-relatorio'));
+    /*REL-INICIO*/ window._relPage='sum'; goView('relatorio', document.getElementById('ptab-sumario'));
   } catch(e) {
     console.error('iniciarDashboard error:', e);
     esconderLoading();
