@@ -13274,8 +13274,10 @@ const relView = (() => {
     prioridades: [
       {t:'Vender dezembro e as festas', d:'Preços por chalé e campanha para ex-hóspedes, até 05/12.'},
       {t:'Ajustar as regras de preço', d:'Prêmio no fim de semana e feriado, última hora só com data vazia e piso de diária líquida.'},
-      {t:'Reduzir o FINEX e priorizar segurança', d:'Renegociar o capital de giro mais caro; deck da piscina, fossa e câmeras antes da alta temporada.'}],
-    atualizadoEm: '2026-11-25', atualizadoPor: 'Claude (versão inicial)'
+      {t:'Concluir a obra do piso do Monviso', d:''},
+      {t:'Contratar a nova fossa e trocar as portas do alojamento dos funcionários', d:''},
+      {t:'Manutenção do deck da piscina', d:''}],
+    atualizadoEm: '2026-11-26', atualizadoPor: 'Gustavo'
   };
   // Limites dos alertas automáticos
   const ALERT = { pace: 0.70, paceMin: 5, finex: 0.50, custo: 0.20, custoMin: 2000, diaria: -3, margem: 10, ocup: -3 };
@@ -13323,7 +13325,7 @@ const relView = (() => {
   const vr = (a,b) => b ? 100*(a-b)/Math.abs(b) : null;
   function chip(a,b,good=true,mode='pct'){
     if (b===undefined||b===null) return '';
-    if (mode==='pp'){ const d=a-b; const ok=(d>=0)===good; return `<span class="rel-c ${Math.abs(d)<0.5?'':(ok?'pos':'neg')}">${d>=0?'+':'−'}${nf0.format(Math.abs(d))} p.p.</span>`; }
+    if (mode==='pp'){ const d=a-b; const ok=(d>=0)===good; return `<span class="rel-c ${Math.abs(d)<0.05?'':(ok?'pos':'neg')}">${d>=0?'+':'−'}${nf1.format(Math.abs(d))} p.p.</span>`; }
     if (mode==='x'){ if (b<=0&&a>0) return '<span class="rel-c pos">virou positivo</span>';
       if (b>0&&a/b>=2) return `<span class="rel-c ${good?'pos':'neg'}">${nf1.format(a/b)}×</span>`;
       if (b<0){ const d=a-b; return `<span class="rel-c ${(d>=0)===good?'pos':'neg'}">${d>=0?'+':'−'}${mil(Math.abs(d))}</span>`; } }
@@ -13435,11 +13437,11 @@ const relView = (() => {
     // custos
     $('rel-l-cus').textContent=`OPEX de ${mil(A.opex)}`+(B&&B.opex?` · ${vr(A.opex,B.opex)>=0?'+':'−'}${nf0.format(Math.abs(vr(A.opex,B.opex)))}% contra ${y-1}`:'');
     const pes=A.g['Pessoal']||0;
-    $('rel-ck').innerHTML=`<div class="rel-mini"><div class="rel-kl">OPEX por diária vendida</div><div class="rel-mv">${rs(A.cpd)}</div><div class="rel-ks">${chip(A.cpd,pv('cpd'),false)} ${B?`${y-1}: `+rs(B.cpd):''}</div></div><div class="rel-mini"><div class="rel-kl">Pessoal sobre faturamento</div><div class="rel-mv">${pc(A.bruta?100*pes/A.bruta:0)}</div><div class="rel-ks">${B?`${y-1}: `+pc(B.bruta?100*(B.g['Pessoal']||0)/B.bruta:0):''}</div></div>`;
+    $('rel-ck').innerHTML=`<div class="rel-mini"><div class="rel-kl">OPEX por diária vendida</div><div class="rel-mv">${rs(A.cpd)}</div><div class="rel-ks">${chip(A.cpd,pv('cpd'),false)} ${B?`${y-1}: `+rs(B.cpd):''}</div></div><div class="rel-mini"><div class="rel-kl">Pessoal sobre faturamento</div><div class="rel-mv">${pc(A.bruta?100*pes/A.bruta:0)}</div><div class="rel-ks">${B&&B.bruta?chip(A.bruta?100*pes/A.bruta:0,100*(B.g['Pessoal']||0)/B.bruta,false,'pp')+' ':''}${B?`${y-1}: `+pc(B.bruta?100*(B.g['Pessoal']||0)/B.bruta:0):''}</div></div>`;
     const G=Object.entries(A.g).filter(([k,v])=>v>0.5).sort((p,q)=>q[1]-p[1]);const gT=G.length?G[0][1]:1;
     $('rel-gl').innerHTML=G.map(([k,v])=>row(k,mil(v),100*v/gT,'',B?small(v,B.g[k]||0,false):'',`${pc(A.opex?100*v/A.opex:0)} do OPEX`)).join('');
     // investimentos e dívidas
-    $('rel-ik').innerHTML=`<div class="rel-mini"><div class="rel-kl">CAPEX</div><div class="rel-mv">${mil(A.capex)}</div><div class="rel-ks">${B?`${y-1}: `+mil(B.capex):''}</div></div><div class="rel-mini"><div class="rel-kl">FINEX</div><div class="rel-mv">${mil(A.finex)}</div><div class="rel-ks">${chip(A.finex,pv('finex'),false)} ${B?`${y-1}: `+mil(B.finex):''}</div></div>`;
+    $('rel-ik').innerHTML=`<div class="rel-mini"><div class="rel-kl">CAPEX</div><div class="rel-mv">${mil(A.capex)}</div><div class="rel-ks">${chip(A.capex,pv('capex'),false)} ${B?`${y-1}: `+mil(B.capex):''}</div></div><div class="rel-mini"><div class="rel-kl">FINEX</div><div class="rel-mv">${mil(A.finex)}</div><div class="rel-ks">${chip(A.finex,pv('finex'),false)} ${B?`${y-1}: `+mil(B.finex):''}</div></div>`;
     const lst=(o,ob)=>{const E=Object.entries(o).filter(([k,v])=>Math.abs(v)>=50).sort((p,q)=>q[1]-p[1]);const T=Math.max(1,...E.map(e=>Math.abs(e[1])));return E.length?E.map(([k,v])=>row(k,mil(v),100*Math.abs(v)/T,v<0?'r-pine':'',ob?small(v,ob[k]||0,false):'')).join(''):'<div class="rel-st">Nada no período.</div>'};
     $('rel-cxl').innerHTML=lst(A.cx,B?B.cx:null); $('rel-fxl').innerHTML=lst(A.fx,B?B.fx:null);
     // utilidades
